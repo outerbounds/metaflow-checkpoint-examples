@@ -1,0 +1,15 @@
+accelerate==0.28.0
+appdirs==1.4.4
+loralib==0.1.2
+bitsandbytes==0.43.0
+datasets==2.18.0
+fire==0.6.0
+git+https://github.com/huggingface/peft.git@v0.10.0
+transformers==4.39.3
+sentencepiece==0.2.0
+gradio==4.25.0
+protobuf==5.26.1
+torch==2.2.2
+tokenizers==0.15.2
+omegaconf==2.4.0.dev3
+metaflow-checkpoint

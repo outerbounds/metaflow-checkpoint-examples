@@ -1,0 +1,9 @@
+models/
+.metaflow
+__pycache__
+.env/
+*.log
+*.sh
+video-models/
+final_render/
+output_videos/

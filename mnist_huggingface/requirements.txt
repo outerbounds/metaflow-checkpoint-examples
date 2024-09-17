@@ -1,0 +1,6 @@
+scikit-learn
+datasets
+torch
+torchvision
+transformers[torch]
+metaflow-checkpoint
