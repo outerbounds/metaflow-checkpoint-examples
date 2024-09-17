@@ -7,7 +7,7 @@ from pytorch_lightning import Trainer
 from metaflow.checkpoint_utils import Checkpoint
 
 
-class MetaflowPTLCheckpoint(ModelCheckpoint):
+class MetaflowCheckpoint(ModelCheckpoint):
     _pointer_id = 0
 
     @classmethod
@@ -18,16 +18,21 @@ class MetaflowPTLCheckpoint(ModelCheckpoint):
     def default_name(
         cls,
     ):
-        return "metaflow_ptl_checkpoint_" + str(cls._pointer_id)
+        return "chckpt_" + str(cls._pointer_id)
 
-    def __init__(self, *args, name: Optional[str] = None, **kwargs):
+    def __init__(
+        self, *args, name: Optional[str] = None, set_latest: bool = True, **kwargs
+    ):
         self.bump_id()
         super().__init__(*args, **kwargs)
         # TODO : add support for outside metaflow main process.
+        monitor = kwargs.get("monitor", None)
+        if monitor is not None:
+            monitor + "-" + str(self._pointer_id)
         self._chckpt_name = name or self.default_name()
         self.checkpointer = Checkpoint()
         self.latest_checkpoint = None
-        self._current_set = set()
+        self.set_latest = set_latest
 
     def _save_checkpoint(self, trainer: Trainer, filepath: str) -> None:
         super()._save_checkpoint(trainer, filepath)
@@ -39,18 +44,16 @@ class MetaflowPTLCheckpoint(ModelCheckpoint):
                 "monitor": self.monitor,
                 "mode": self.mode,
             },
+            "saved_from": "PTLTrainer",
         }
-        self._post_save_callback(metadata)
+        self._post_save_callback(metadata, filepath)
 
-    def _post_save_callback(self, metadata):
-        new_keys = set(self.best_k_models.keys())
-        old_keys = self._current_set
-        if len(new_keys - old_keys) == 0:
-            return
-        # TODO [PRE-RELEASE] Ensure that we only save **one** file per checkpoint since there is only
-        # one new file added here
-        metadata["file_names"] = [os.path.basename(k) for k in new_keys - old_keys]
+    def _post_save_callback(self, metadata, filepath):
+        metadata["file_names"] = [os.path.basename(filepath)]
         self.latest_checkpoint = self.checkpointer.save(
-            list(new_keys), metadata, name=self._chckpt_name
+            # Ideally it will be one single file!
+            filepath,
+            metadata,
+            name=self._chckpt_name,
+            latest=self.set_latest,
         )
-        self._current_set = new_keys

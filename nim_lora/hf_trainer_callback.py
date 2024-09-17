@@ -15,7 +15,7 @@ def _make_metrics_dict(metric, filter_metrics):
     return data
 
 
-class MetaflowCallback(TrainerCallback):
+class MetaflowCheckpointCallback(TrainerCallback):
     _pointer_id = 0
 
     @classmethod

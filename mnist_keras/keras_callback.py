@@ -46,8 +46,14 @@ class MetaflowKerasCheckpoint(ModelCheckpoint):
         if set(files) == set(self._files):
             return
         latest_file = self._get_file_path(epoch, batch, logs)
-        # TODO [PRE-RELEASE] Ensure that we only save **one** file per checkpoint since there is only
-        # one new file added here
-        self.latest_checkpoint = self.checkpointer.save(files, name=self._chckpt_name)
+        self.latest_checkpoint = self.checkpointer.save(
+            latest_file,
+            name=self._chckpt_name,
+            metadata={
+                "epoch": epoch,
+                "latest_file": latest_file,
+                "saved_from": "KerasTrainer",
+            },
+        )
         self._files = files
         self.latest_file = latest_file

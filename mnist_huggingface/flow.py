@@ -13,11 +13,11 @@ class MnistHFTrainerFlow(FlowSpec):
     @step
     def train(self):
         from hf_train_mnist import train
-        from hf_trainer_callback import MetaflowCallback
+        from hf_trainer_callback import MetaflowCheckpointCallback
         import os
         from transformers.trainer_callback import PrinterCallback
 
-        best_cb = MetaflowCallback()
+        best_cb = MetaflowCheckpointCallback()
         train(
             callbacks=[best_cb, PrinterCallback()],
             num_epochs=self.epochs,
@@ -34,9 +34,6 @@ class MnistHFTrainerFlow(FlowSpec):
         test(
             os.path.join(
                 current.model.loaded["best_checkpoint"],
-                current.model.loaded.info["best_checkpoint"]["metadata"][
-                    "checkpoint_dir"
-                ],
                 "model.safetensors",
             )
         )

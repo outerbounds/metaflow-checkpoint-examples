@@ -144,6 +144,11 @@ class TextToVideo(FlowSpec, ConfigBase):
     @huggingface_hub
     @step
     def get_clip_model(self):
+        # `current.huggingface_hub.snapshot_download` downloads the model from the Hugging Face Hub
+        # and saves it in the backend storage based on the model's `repo_id`. If there exists a model
+        # with the same `repo_id` in the backend storage, it will not download the model again. The return
+        # value of the function is a reference to the model in the backend storage.
+        # This reference can be used to load the model in the subsequent steps via `@model(load=["hf_model_checkpoint"])`
         self.clip_model_checkpoint = current.huggingface_hub.snapshot_download(
             repo_id=CLIP_MODEL_LIAON["name"],
             allow_patterns=CLIP_MODEL_LIAON["file"],
@@ -158,6 +163,11 @@ class TextToVideo(FlowSpec, ConfigBase):
     @huggingface_hub
     @step
     def get_video_diff_model(self):
+        # `current.huggingface_hub.snapshot_download` downloads the model from the Hugging Face Hub
+        # and saves it in the backend storage based on the model's `repo_id`. If there exists a model
+        # with the same `repo_id` in the backend storage, it will not download the model again. The return
+        # value of the function is a reference to the model in the backend storage.
+        # This reference can be used to load the model in the subsequent steps via `@model(load=["hf_model_checkpoint"])`
         self.stable_video_diff_checkpoint = current.huggingface_hub.snapshot_download(
             repo_id=VIDEO_DIFF_MODEL["name"],
             allow_patterns=VIDEO_DIFF_MODEL["file"],
@@ -173,6 +183,11 @@ class TextToVideo(FlowSpec, ConfigBase):
     @checkpoint(load_policy="none")
     @step
     def get_stable_diffusion_model(self):
+        # This step uses the @checkpoint functionality to create a `cache`
+        # of the model. It uses the `checkpoint.list` functionality to list
+        # checkpoints created in past executions. If the checkpoint is found,
+        # it's reference will be returned, otherwise the model will be saved
+        # in the cache for subsequent runs.
         self.sdxl_checkpoint = self._sdxl_checkpoint_from_cache()
         self.next(self.join_checkpoints)
 
@@ -191,7 +206,9 @@ class TextToVideo(FlowSpec, ConfigBase):
         disk=unit_convert(100, "GB", "MB"),
     )
     @card(customize=True)
-    @model(load=["sdxl_checkpoint"])
+    @model(
+        load=["sdxl_checkpoint"]
+    )  # Pulls and set's up the model present in `self.sdxl_checkpoint` in a temp directory
     @step
     def generate_images(self):
         # Derive seed and promptss
@@ -201,7 +218,6 @@ class TextToVideo(FlowSpec, ConfigBase):
             # Derive seed from metaflow pathspec
             seed = hash(current.pathspec)
 
-        # [@use_checkpoint] SET THE PATH TO THE LOADED MODEL
         model_path = current.model.loaded["sdxl_checkpoint"]
         # Generate the images for the prompts
         image_prompts = TextToImageDiffusion.infer_prompt(
@@ -246,9 +262,18 @@ class TextToVideo(FlowSpec, ConfigBase):
     @card
     @model(
         load=[
-            ("clip_model_checkpoint", "./checkpoints"),
-            ("stable_video_diff_checkpoint", "./checkpoints"),
-            ("images_ref", None),
+            (
+                "clip_model_checkpoint",
+                "./checkpoints",
+            ),  # Unpacks the `self.clip_model_checkpoint` to the directory `./checkpoints`
+            (
+                "stable_video_diff_checkpoint",
+                "./checkpoints",
+            ),  # Unpacks the `self.stable_video_diff_checkpoint` to the directory `./checkpoints`
+            (
+                "images_ref",
+                None,
+            ),  # Loads the images from the `self.images_ref` to a temp directory
         ]
     )
     @step
@@ -262,8 +287,6 @@ class TextToVideo(FlowSpec, ConfigBase):
             # Derive seed from metaflow pathspec
             seed = hash(current.pathspec)
 
-        # Since we have access to the images from the previous step using `@use_checkpoints` with the
-        # name reference images.
         images_dir = current.model.loaded["images_ref"]
         image_paths = [
             os.path.join(images_dir, f) for f in os.listdir(images_dir) if ".png" in f

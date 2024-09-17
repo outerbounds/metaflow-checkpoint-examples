@@ -78,7 +78,7 @@ class FinetuneLlama3LoRA(FlowSpec):
     def sft(self):
         import os
         from my_peft_tools import create_model, create_trainer, save_model
-        from hf_trainer_callback import MetaflowCallback
+        from hf_trainer_callback import MetaflowCheckpointCallback
 
         model, tokenizer = create_model(
             self.script_args, current.model.loaded["model_reference"]
@@ -89,7 +89,7 @@ class FinetuneLlama3LoRA(FlowSpec):
             model,
             smoke=self.smoke,
             callbacks=[
-                MetaflowCallback(),
+                MetaflowCheckpointCallback(),
             ],
         )
         trainer.train()

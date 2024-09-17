@@ -81,7 +81,10 @@ def train_mnist(checkpoint_path=None, num_epochs=10, callbacks=[]):
         model = MNISTClassifier()
 
     # Trainer
-    trainer = pl.Trainer(max_epochs=num_epochs, callbacks=callbacks)
+    trainer = pl.Trainer(
+        max_epochs=num_epochs,
+        callbacks=callbacks,
+    )
 
     # Train the model
     trainer.fit(model, train_loader, val_loader)

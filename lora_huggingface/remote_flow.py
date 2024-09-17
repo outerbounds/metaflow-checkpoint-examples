@@ -6,7 +6,6 @@ from metaflow import (
     card,
     project,
     huggingface_hub,
-    checkpoint_config,
     checkpoint,
     retry,
     model,
@@ -22,17 +21,18 @@ from metaflow.profilers import gpu_profile
 HF_IMAGE = "registry.hub.docker.com/valayob/hf-transformer-gpu:4.39.3.1"
 
 
-@checkpoint_config
 @project(name="chkpt_lora")
 class LlamaInstructionTuning(FlowSpec, HuggingFaceLora):
-
-    # @kubernetes(cpu=4, memory=16000, disk=80000, image=HF_IMAGE)
-    # @pypi(packages={"huggingface-hub":"0.16.4", "omegaconf":"2.4.0.dev3"}, python="3.11.5")
     @card
     @huggingface_hub
     @step
     def start(self):
         base_model = self.config.model.base_model
+        # `current.huggingface_hub.snapshot_download` downloads the model from the Hugging Face Hub
+        # and saves it in the backend storage based on the model's `repo_id`. If there exists a model
+        # with the same `repo_id` in the backend storage, it will not download the model again. The return
+        # value of the function is a reference to the model in the backend storage.
+        # This reference can be used to load the model in the subsequent steps via `@model(load=["hf_model_checkpoint"])`
         self.hf_model_checkpoint = current.huggingface_hub.snapshot_download(
             repo_id=base_model,
             ignore_patterns=[
@@ -43,7 +43,6 @@ class LlamaInstructionTuning(FlowSpec, HuggingFaceLora):
         self.next(self.finetune)
 
     # @pypi(disabled=True)
-    # TODO : Use @model to load the checkpoint.
     @gpu_profile(interval=0.5)
     @model(load=["hf_model_checkpoint"])
     @checkpoint
@@ -52,16 +51,12 @@ class LlamaInstructionTuning(FlowSpec, HuggingFaceLora):
     @step
     def finetune(self):
         self.config.model.model_save_directory = current.checkpoint.directory
-        # Set the resuming checkpoint if there is a checkpoint loaded in the current context.
+
         self.config.model.resuming_checkpoint_path = None
-        if (
-            current.checkpoint.is_loaded
-            and "latest_dir" in current.checkpoint.info.metadata
-        ):
-            self.config.model.resuming_checkpoint_path = os.path.join(
-                current.checkpoint.directory,
-                current.checkpoint.info.metadata["latest_dir"],
-            )
+        if current.checkpoint.is_loaded:
+            # Checkpoints Saved via the `MetaflowCheckpointCallback`
+            # will contain directly the path to the entire checkpoint directory.
+            self.config.model.resuming_checkpoint_path = current.checkpoint.directory
 
         self.run(
             base_model_path=current.model.loaded["hf_model_checkpoint"],
@@ -70,21 +65,6 @@ class LlamaInstructionTuning(FlowSpec, HuggingFaceLora):
 
         current.card.extend(self.config_report())
         self.next(self.end)
-
-    def _get_checkpoint_path(self):
-        if not current.checkpoint.is_loaded:
-            return None
-        print("Using checkpoint from : ", current.checkpoint.info.pathspec)
-        if "latest_dir" not in current.checkpoint.info.metadata:
-            return None
-        print(
-            "Using checkpoint from : ", current.checkpoint.info.metadata["latest_dir"]
-        )
-        print("data in checkpoint directory:", os.listdir(current.checkpoint.directory))
-        return os.path.join(
-            current.checkpoint.directory,
-            current.checkpoint.info.metadata["latest_dir"],
-        )
 
     @step
     def end(self):
