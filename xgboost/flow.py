@@ -23,7 +23,7 @@ class XGBoostModelRegistry(FlowSpec):
         num_round = 2
         bst = xgb.train(param, dtrain, num_round)
         bst.save_model("model.bst")
-        current.model.save(
+        self.xgboost_model = current.model.save(
             "model.bst",
             metadata={
                 "my_message": "hi",
@@ -31,9 +31,22 @@ class XGBoostModelRegistry(FlowSpec):
         )
         self.next(self.end)
 
+    @model(load="xgboost_model")
     @step
     def end(self):
-        pass
+        # current.model.loaded["xgboost_model"] is the path to directory
+        # holding the loaded model
+        import os
+        import xgboost as xgb
+
+        model_path = os.path.join(current.model.loaded["xgboost_model"], "model.bst")
+        bst = xgb.Booster()
+        bst.load_model(model_path)
+        print(
+            bst.predict(
+                xgb.DMatrix([[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]])
+            )
+        )
 
 
 if __name__ == "__main__":
