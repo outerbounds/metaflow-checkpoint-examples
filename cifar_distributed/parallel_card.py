@@ -15,6 +15,85 @@ from metaflow.plugins.cards.card_modules.components import (
 import time
 
 
+def make_gang_layout(
+    current_node_index,
+    num_nodes,
+):
+    data_values = []
+    for i in range(num_nodes):
+        if i == current_node_index:
+            _type = "self"
+            if i == 0:
+                _type = "self (control)"
+            data_values.append({"index": i, "type": _type})
+        elif i == 0:
+            data_values.append({"index": i, "type": "control"})
+        else:
+            data_values.append({"index": i, "type": "worker"})
+
+    return {
+        "$schema": "https://vega.github.io/schema/vega/v5.json",
+        "width": 600,
+        "height": 100,
+        "padding": 5,
+        "data": [{"name": "table", "values": data_values}],
+        "scales": [
+            {
+                "name": "xscale",
+                "type": "band",
+                "domain": {"data": "table", "field": "index"},
+                "range": "width",
+            },
+            {
+                "name": "color",
+                "type": "ordinal",
+                "domain": {"data": "table", "field": "type"},
+                "range": ["#FF6347", "#4682B4", "#32CD32"],
+            },
+        ],
+        "axes": [
+            {
+                "orient": "bottom",
+                "scale": "xscale",
+                "title": "Gang Cluster Layout",
+                "labelColor": "black",
+                "labelFontSize": 14,
+                "tickColor": "black",
+            }
+        ],
+        "legends": [
+            {
+                "fill": "color",
+                "title": "Type",
+                "orient": "right",
+                "encode": {
+                    "symbols": {
+                        "enter": {
+                            "fillOpacity": {"value": 1},
+                            "stroke": {"value": "transparent"},
+                        }
+                    }
+                },
+            }
+        ],
+        "marks": [
+            {
+                "type": "rect",
+                "from": {"data": "table"},
+                "encode": {
+                    "enter": {
+                        "x": {"scale": "xscale", "field": "index"},
+                        "width": {"scale": "xscale", "band": 1, "offset": -2},
+                        "y": {"value": 10},
+                        "height": {"value": 80},
+                        "fill": {"scale": "color", "field": "type"},
+                    }
+                },
+            }
+        ],
+    }
+
+
 class ParallelCardRendererThread(Thread):
 
     CARD_ID = "parallel_card"
@@ -73,6 +152,7 @@ class ParallelCardRefresher:
                 "**Task %s [Attempt:%s]**"
                 % (self.current.pathspec, self.current.retry_count)
             ),
+            Markdown("## Cluster Info"),
             Table(
                 data=[
                     [
@@ -84,10 +164,16 @@ class ParallelCardRefresher:
                         Artifact(self.current.parallel.num_nodes),
                     ],
                     [
-                        Markdown("**Worker Index**"),
+                        Markdown("**Current Node Index**"),
                         Artifact(self.current.parallel.node_index),
                     ],
                 ]
+            ),
+            Markdown("## Cluster Layout"),
+            VegaChart(
+                make_gang_layout(
+                    self.current.parallel.node_index, self.current.parallel.num_nodes
+                ),
             ),
         ]
 
