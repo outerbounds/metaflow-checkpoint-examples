@@ -18,7 +18,7 @@ import torch.nn as nn
 from torch.nn.parallel import DistributedDataParallel as DDP
 import torch.distributed as dist
 from torch.utils.data.distributed import DistributedSampler
-from metaflow.checkpoint_utils import Checkpoint
+from metaflow import Checkpoint
 
 IMAGE_DIMS = (336, 336)
 

@@ -3,7 +3,7 @@ from transformers.training_args import TrainingArguments
 from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
 from metaflow import FlowSpec, Task, current
 from typing import Any, Dict, Literal, Optional, Union
-from metaflow.checkpoint_utils import Checkpoint
+from metaflow import Checkpoint
 import os
 
 

@@ -2,7 +2,7 @@ from keras.callbacks import ModelCheckpoint
 from metaflow import FlowSpec, Task, current
 from typing import Any, Dict, Literal, Optional, Union
 import glob
-from metaflow.checkpoint_utils import Checkpoint
+from metaflow import Checkpoint
 import re
 
 

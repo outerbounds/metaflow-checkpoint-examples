@@ -15,7 +15,7 @@ from metaflow import (
 import os
 
 import tempfile
-from metaflow.checkpoint_utils import Checkpoint
+from metaflow import Checkpoint
 from metaflow.profilers import gpu_profile
 
 # HF_IMAGE = "006988687827.dkr.ecr.us-west-2.amazonaws.com/llm/hf-lora-pt:latest"

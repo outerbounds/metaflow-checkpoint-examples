@@ -4,7 +4,7 @@ from metaflow import current
 from typing import Any, Dict, Literal, Optional, Union
 import os
 from pytorch_lightning import Trainer
-from metaflow.checkpoint_utils import Checkpoint
+from metaflow import Checkpoint
 
 
 class MetaflowCheckpoint(ModelCheckpoint):

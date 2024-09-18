@@ -8,7 +8,7 @@ from torch.optim import Adam
 from torch.nn import Module
 from torchvision import models
 import torchmetrics
-from metaflow.checkpoint_utils import Checkpoint
+from metaflow import Checkpoint
 from metaflow import current
 
 
