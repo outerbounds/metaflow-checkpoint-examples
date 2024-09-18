@@ -24,6 +24,7 @@ from metaflow import (
 )
 from metaflow.profilers import gpu_profile
 from metrics_logger import metrics_logger
+from parallel_card import parallel_card
 
 NUM_GPUS_PER_NODE = 1
 
@@ -69,6 +70,7 @@ class Cifar10DistributedTrainingFlow(FlowSpec):
     def start(self):
         self.next(self.train, num_parallel=self.cluster_size)
 
+    @parallel_card
     @retry(times=4)
     @metrics_logger
     @pypi(python="3.10", packages=packages)

@@ -386,4 +386,6 @@ def metrics_logger(func):
         finally:
             thread.stop()
 
-    return card(type="blank", id=MetricsCardRendererThread.CARD_ID)(wrapper)
+    return card(type="blank", id=MetricsCardRendererThread.CARD_ID, customize=False)(
+        wrapper
+    )
