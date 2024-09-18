@@ -59,9 +59,17 @@ class HFCachedModelFlow(FlowSpec):
     @model(load=["hugging_face_model"])
     @step
     def end(self):
-        print("using checkpoint", self.hugging_face_model["metadata"])
-        print(str(self.hugging_face_model))
-        print(current.model.loaded["hugging_face_model"])
+        import os
+
+        print("using the huggingface model", self.hugging_face_model["metadata"])
+        print(
+            "Model is loaded in the directory",
+            current.model.loaded["hugging_face_model"],
+        )
+        print(
+            "contents of the directory : ",
+            os.listdir(current.model.loaded["hugging_face_model"]),
+        )
 
 
 if __name__ == "__main__":
