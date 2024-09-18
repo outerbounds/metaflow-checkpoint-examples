@@ -8,6 +8,8 @@ from torch.optim import Adam
 from torch.nn import Module
 from torchvision import models
 import torchmetrics
+from metaflow.checkpoint_utils import Checkpoint
+from metaflow import current
 
 
 class MNISTClassifier(Module):
@@ -26,19 +28,17 @@ class MNISTClassifier(Module):
         return self.model(x)
 
 
-def _get_metaflow_checkpointer():  ## METAFLOW-SPECIFIC-CODE
-    from metaflow.checkpoint_utils import Checkpoint
-
-    try:
-        return Checkpoint()
-    except:
-        pass
-
-
 def train_model(
-    model, train_loader, val_loader, optimizer, checkpoint_dir=None, epochs=10
+    model,
+    train_loader,
+    val_loader,
+    optimizer,
+    checkpoint_dir=None,
+    start_epoch=0,
+    epochs=10,
 ):
-    metaflow_checkpointer = _get_metaflow_checkpointer()  ## METAFLOW-SPECIFIC-CODE
+    ## METAFLOW-SPECIFIC-CODE
+    checkpoint = Checkpoint()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
 
@@ -54,9 +54,11 @@ def train_model(
     best_loss, best_acc = float("inf"), 0
     best_path = os.path.join(checkpoint_dir, "best_model.pth")
 
-    for epoch in range(epochs):
+    print("starting training from epoch", start_epoch)
+    for epoch in range(start_epoch, epochs):
         model.train()
         epoch_path = os.path.join(checkpoint_dir, f"checkpoint_epoch_{epoch}.pth")
+        epoch_number_path = os.path.join(checkpoint_dir, "checkpoint_epoch_number")
         for batch_idx, (data, target) in enumerate(train_loader):
             data, target = data.to(device), target.to(device)
             optimizer.zero_grad()
@@ -78,10 +80,14 @@ def train_model(
 
         # Save checkpoint
         torch.save(model.state_dict(), epoch_path)
+        with open(epoch_number_path, "w") as f:
+            f.write(str(epoch))
 
         ## METAFLOW-SPECIFIC-CODE
-        if metaflow_checkpointer:
-            latest_checkpoint = metaflow_checkpointer.save(checkpoint_dir)
+        latest_checkpoint = checkpoint.save(checkpoint_dir)
+
+        if epoch % 2 == 0 and epoch > 0 and current.retry_count == 0:
+            raise Exception("Simulating Failure")
 
     return best_loss, best_acc, latest_checkpoint
 
@@ -128,7 +134,7 @@ def test(checkpoint_path):
     validate_model(model, test_loader, device)
 
 
-def train(checkpoint_path=None, num_epochs=10, model_save_dir=None):
+def train(checkpoint_path=None, num_epochs=10, start_epoch=0, model_save_dir=None):
     # Transforms for the MNIST dataset
     transform = transforms.Compose(
         [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
@@ -153,6 +159,7 @@ def train(checkpoint_path=None, num_epochs=10, model_save_dir=None):
         val_loader,
         optimizer,
         epochs=num_epochs,
+        start_epoch=start_epoch,
         checkpoint_dir=model_save_dir,
     )
 
