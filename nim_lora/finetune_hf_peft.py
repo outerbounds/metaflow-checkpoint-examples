@@ -60,6 +60,13 @@ class FinetuneLlama3LoRA(FlowSpec):
     @huggingface_hub
     @step
     def download_model(self):
+        # Calling the `current.huggingface_hub.snapshot_download` function will download
+        # the model from huggingface and save it to metaflow' datastore if it is not present
+        # in the Metaflow's datastore. If the model is present, it will just
+        # return a reference to the model. In any case the output of this function is a
+        # reference to the model.
+        # This reference can be loaded in other @steps using the `@model` decorator
+        # with the `load` parameter.
         self.model_reference = current.huggingface_hub.snapshot_download(
             repo_id=self.script_args.model_name,
             allow_patterns=[
@@ -96,6 +103,12 @@ class FinetuneLlama3LoRA(FlowSpec):
         output_dirname, merge_output_dirname = save_model(self.script_args, trainer)
         self.model = current.model.save(output_dirname, label="lora")
         if merge_output_dirname:
+            # In many cases, users may want models that are fully fused with the LoRA
+            # adapter. This makes it such that the model is very different from the
+            # checkpoints that are saved during training (Where the checkpoints are LoRA adapters
+            # but the model is the original model with the LoRA adapter fused).
+            # Using the `current.model.save` allows these models to live as first class models
+            # within Metaflow also enabling a means to track thier lineage.
             self.merged_model = current.model.save(
                 merge_output_dirname, label="lora_fused"
             )

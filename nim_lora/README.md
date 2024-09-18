@@ -1,27 +1,39 @@
-### Finetune workflow
+# Training a Custom LoRA Adapter with Metaflow on @nvidia 
 
-#### Smoke test
+## Setup
+
+1. This example require execution on the Outerbounds Platform. To run it on the outerbounds platform first run `pip install outerbounds`
+
+2. Install other dependencies
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+## Executing the Flow
+
+
+### Smoke test
 ```bash
 python finetune_hf_peft.py --environment=pypi run --smoke True
 ```
 
-#### Full run
+### Full run
 ```bash
 python finetune_hf_peft.py --environment=pypi run
 ```
 
-#### Download your lora adapter and move it to `$NIM_PEFT_SOURCE`
+### Download your lora adapter and move it to `$NIM_PEFT_SOURCE`
 
 ```python
 import os
 from my_peft_tools import download_latest_checkpoint
 download_latest_checkpoint(
-    lora_name="llama3-8b-instruct-alpaca-custom",  # remember this name, you'll need it later
-    lora_dir=os.path.join(os.path.expanduser('~'), 'loras') # NOTE: this is the default
+    lora_dir=os.path.join(os.path.expanduser('~'), 'loras') 
+    # NOTE: this is the default
 )
 ```
 
-### Serve container
+### Serve NIM container
 
 #### Set up environment
 ```
@@ -73,3 +85,18 @@ curl -X 'POST'   'http://0.0.0.0:8000/v1/chat/completions'   -H 'accept: applica
     "max_tokens": 15,
 }'
 ```
+
+## Salient Features
+
+- **Using Custom Models From External Sources like Huggingface**: This flow leverages the `@huggingface_hub` decorator to save and cache models so that they can be used in subsequent steps. More information about this decorator can be found in [this example](../hf_registry/)
+
+- **Checkpointing in external compute mediums**: The `@checkpoint` functionality works in tandem will all compute exection mediums supported by Metaflow such as `@batch`, `@kubernetes` or even `@nvidia`. This checkpointing functionality in this flow piggyback a Huggingface callback mechanism via the `MetaflowCheckpointCallback` mentioned in [the other examples](../lora_huggingface/). 
+
+- **Saving First Class Models For Inference**: The `@model` decorator is used to save the model and provide it first class identity in the Metaflow ecosystem. This maybe needed when the final models maybe different from checkpoints. For example, some models may require fusing the LoRA adapter with the base model so that it can be later used. The below code snippet from the flow showcases the API in action: 
+  ```python
+  self.model = current.model.save(output_dirname, label="lora")
+  if merge_output_dirname:
+    self.merged_model = current.model.save(
+        merge_output_dirname, label="lora_fused"
+    )
+  ```
