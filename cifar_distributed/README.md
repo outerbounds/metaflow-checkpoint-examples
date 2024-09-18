@@ -37,3 +37,4 @@ This examples showcases how users can train a vision model on CIFAR-10 using PyT
             "checkpoint-load-path": current.checkpoint.directory,
         }
     ```
+- **Metrics Tracking and Logging**: This flow exposes a `@metrics_logger` decorator that helps log and track metrics of a training run. The `metrics_logger` module also exposes a `MetricsLogger` object that can be placed in the user code to log metrics. The metrics are then available in the Metaflow UI for visualization. More of it's usage can be seen [here](./train_ddp.py)
