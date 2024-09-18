@@ -38,7 +38,6 @@ class MetaflowCheckpointCallback(TrainerCallback):
         ],
     ):
         self.bump_id()
-        # TODO : add support for outside metaflow main process.
         self._name = name or self.default_name()
         from metaflow import current
 

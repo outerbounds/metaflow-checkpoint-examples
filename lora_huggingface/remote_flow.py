@@ -43,6 +43,7 @@ class LlamaInstructionTuning(FlowSpec, HuggingFaceLora):
         self.next(self.finetune)
 
     # @pypi(disabled=True)
+    @card(customize=True)
     @gpu_profile(interval=0.5)
     @model(load=["hf_model_checkpoint"])
     @checkpoint
@@ -55,7 +56,8 @@ class LlamaInstructionTuning(FlowSpec, HuggingFaceLora):
         self.config.model.resuming_checkpoint_path = None
         if current.checkpoint.is_loaded:
             # Checkpoints Saved via the `MetaflowCheckpointCallback`
-            # will contain directly the path to the entire checkpoint directory.
+            # will be automatically loaded on retries so we just need to pass the
+            # underlying function the path where the checkpoint was loaded from.
             self.config.model.resuming_checkpoint_path = current.checkpoint.directory
 
         self.run(
