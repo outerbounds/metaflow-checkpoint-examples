@@ -7,14 +7,14 @@ Long-running data processing and machine learning jobs often present several cha
    - *Example*: During data preprocessing, you generate intermediate datasets like tokenized text or transformed images. Losing these intermediates means re-running expensive computations, which can be especially problematic if they took hours to create.
 
 2. **External Dependencies**: Jobs may require large external data (e.g., pre-trained models) that are cumbersome to manage.
-   - *Example*: Loading a pre-trained transformer model from Hugging Face Hub can take a significant amount of time and bandwidth. If this model isn't cached, every run or worker node would need to download it separately, leading to inefficiencies.
+   - *Example*: Loading a pre-trained transformer model from Hugging Face Hub can take a significant amount of time and bandwidth. If this model isn't cached, every run or worker node (in a distributed training context) would need to download it separately, leading to inefficiencies.
 
 3. **Version Control in Multi-User Environments**: Managing checkpoints and models in a multi-user setting requires proper version control to prevent overwriting and ensure correct loading during failure recovery.
    - *Example*: If multiple data scientists are training models and saving checkpoints to a shared storage, one user's checkpoint might accidentally overwrite another's. This can lead to confusion and loss of valuable work. Moreover, when a job resumes after a failure, it must load the correct checkpoint corresponding to that specific run and user.
 
 To address these challenges, Metaflow introduces the `@checkpoint`/ `@model`/ `@huggingface_hub` decorators, which simplify the process of saving and loading checkpoints and models within your flows. These decorators ensure that your long-running jobs can be resumed seamlessly after a failure, manage external dependencies efficiently, and maintain proper version control in collaborative environments.
 
-This repository contains a gallery of examples demonstrating how to leverage ``@checkpoint`/`@model`/`@huggingface_hub` to overcome the aforementioned challenges. By exploring these examples, you'll learn practical ways to integrate checkpointing and model management into your workflows, enhancing robustness, efficiency, and collaboration.**
+This repository contains a gallery of examples demonstrating how to leverage `@checkpoint`/`@model`/`@huggingface_hub` to overcome the aforementioned challenges. By exploring these examples, you'll learn practical ways to integrate checkpointing and model management into your workflows, enhancing robustness, efficiency, and collaboration.**
 
 ---
 
