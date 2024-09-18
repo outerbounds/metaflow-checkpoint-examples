@@ -18,3 +18,4 @@ opencv-python==4.8.1.78
 accelerate==0.24.1
 clip @ git+https://github.com/openai/CLIP.git@a1d071733d7111c9c014f024669f959182114e33
 metaflow-checkpoint
+metaflow-card-html @ git+https://github.com/outerbounds/metaflow-card-html
