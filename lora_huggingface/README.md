@@ -1,5 +1,7 @@
 # Training LoRA's with Huggingface and Peft
 
+[This flow](./remote_flow.py) finetunes a LoRA from a model downloaded from huggingface. It uses the `@checkpoint` decorator to save the model's state periodically so that it can reload it when the execution gets interrupted.
+
 ## Setup
 
 1. If you are running OSS Metaflow install `pip install metaflow`; If you are runnning it on the Outerbounds Platform, run `pip install outerbounds`

@@ -1,5 +1,7 @@
 # Distributed Training of Vision Models on CIFAR-10 with PyTorch DDP
 
+This examples showcases how users can train a vision model on CIFAR-10 using PyTorch's Distributed Data Parallel (DDP) (multi-node). The flow uses the `@checkpoint` decorator to save the model's state periodically so that it can reload it when the execution gets interrupted. It also showcases how the model can then be used for testing in subsequent steps.
+
 ## Setup
 
 1. If you are running OSS Metaflow install `pip install metaflow`; If you are runnning it on the Outerbounds Platform, run `pip install outerbounds`
