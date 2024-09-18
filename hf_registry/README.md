@@ -1,4 +1,4 @@
-# Working with Models from external source in Metaflow like Hugging Face Hub
+# Working with Models from an external source in Metaflow like Hugging Face Hub
 
 This is a simple example that showcases how users can leverage the `@huggingface_hub` decorator. The decorator exposes a `current.huggingface_hub.snapshot_download` function which wraps over [Huggingface's snapshot_download](https://huggingface.co/docs/huggingface_hub/v0.25.0/en/package_reference/file_download#huggingface_hub.snapshot_download) function. Calling the `current.huggingface_hub.snapshot_download` function will download the model from huggingface if it is not present in the Metaflow's datastore. If the model is present, it will just return a reference to the model so that it can be loaded in subsequent steps with the `@model` decorator.
 
