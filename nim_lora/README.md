@@ -11,16 +11,32 @@
 
 ## Executing the Flow
 
+### Opensource Metaflow
 
-### Smoke test
+
+#### Smoke test
 ```bash
 python finetune_hf_peft.py --environment=pypi run --smoke True
 ```
 
-### Full run
+#### Full run
 ```bash
 python finetune_hf_peft.py --environment=pypi run
 ```
+
+
+### Outerbounds Platform
+
+#### Smoke test
+```bash
+python finetune_hf_peft.py --environment=fast-bakery run --smoke True
+```
+
+#### Full run
+```bash
+python finetune_hf_peft.py --environment=fast-bakery run
+```
+
 
 ### Download your lora adapter and move it to `$NIM_PEFT_SOURCE`
 

@@ -30,5 +30,6 @@
     "logging_steps": 5,
     "merge": false,
     "output_dir": "./lora_checkpoints",
-    "hub_model_id": "llama3.1-ob"
+    "hub_model_id": "llama3.1-ob",
+    "push_to_hub": false
 }

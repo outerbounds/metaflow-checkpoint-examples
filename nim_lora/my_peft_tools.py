@@ -16,9 +16,43 @@ from transformers import (
     TrainingArguments,
 )
 from trl import SFTTrainer
+from huggingface_hub import upload_folder
+from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
 
 
 torch.manual_seed(42)
+
+
+def push_to_hub(
+    trainer,
+    finetuned_from,
+    commit_message="End of Training Run",
+    blocking=True,
+):
+    """
+    Ideally call this function once you have saved the model and then want to push the model to hub.
+    """
+    from huggingface_hub import upload_folder
+    from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
+
+    if trainer.hub_model_id is None:
+        trainer.init_hf_repo()
+
+    _readme_path = os.path.join(trainer.args.output_dir, "README.md")
+    if os.path.exists(_readme_path):
+        os.remove(_readme_path)
+
+    trainer.create_model_card(
+        finetuned_from=finetuned_from,
+    )
+
+    return upload_folder(
+        repo_id=trainer.hub_model_id,
+        folder_path=trainer.args.output_dir,
+        commit_message=commit_message,
+        run_as_future=not blocking,
+        ignore_patterns=["_*", f"{PREFIX_CHECKPOINT_DIR}-*"],
+    )
 
 
 @dataclass
@@ -55,6 +89,11 @@ class ScriptArguments:
     logging_steps: int = field(default=25)
     merge: bool = field(default=False)
     hub_model_id: Optional[str] = field(default=None)
+    push_to_hub: bool = field(default=False)
+
+    def __post_init__(self):
+        if self.push_to_hub and self.hub_model_id is None:
+            raise ValueError("hub_model_id is required for push_to_hub=True")
 
     def to_dict(self):
         return asdict(self)
@@ -100,7 +139,6 @@ def create_model(args, model_path):
 def create_trainer(args, tokenizer, model, smoke=False, callbacks=[]):
     training_arguments = TrainingArguments(
         hub_model_id=args.hub_model_id,
-        push_to_hub=True,
         # Where/how to write results?
         output_dir=args.output_dir,
         logging_steps=1 if smoke else args.logging_steps,

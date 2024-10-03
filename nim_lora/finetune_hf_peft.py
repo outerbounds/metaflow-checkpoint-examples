@@ -76,7 +76,11 @@ class FinetuneLlama3LoRA(FlowSpec):
         )
         self.next(self.sft)
 
-    @environment(vars={"TOKENIZERS_PARALLELISM": "true"})
+    @environment(
+        vars={
+            "TOKENIZERS_PARALLELISM": "true",
+        }
+    )
     @checkpoint
     @model(load="model_reference")
     @gpu_profile(interval=1)
@@ -89,7 +93,7 @@ class FinetuneLlama3LoRA(FlowSpec):
     @step
     def sft(self):
         import os
-        from my_peft_tools import create_model, create_trainer, save_model
+        from my_peft_tools import create_model, create_trainer, save_model, push_to_hub
         from hf_trainer_callback import MetaflowCheckpointCallback
 
         model, tokenizer = create_model(
@@ -118,10 +122,12 @@ class FinetuneLlama3LoRA(FlowSpec):
                 merge_output_dirname, label="lora_fused"
             )
 
-        trainer.push_to_hub(
-            model_name=self.script_args.model_name,
-            finetuned_from=self.script_args.model_name,
-        )
+        if self.script_args.push_to_hub:
+            push_to_hub(
+                trainer,
+                self.script_args.model_name,
+                # This is the model it was finetuned on.
+            )
         self.next(self.end)
 
     @step
