@@ -44,7 +44,13 @@ llamafactory-cli train train_llama3.2_instruct_lora.json
 GRADIO_SHARE=1 llamafactory-cli webchat infer_llama3.2_instruct_lora.json
 ```
 
-## Part 3: Run grid search in Metaflow code
+## Part 3: Run Llama Factory Remotely. 
+
+```bash
+python single_train_flow.py run --training-config train_llama3.2_instruct_lora.json
+```
+
+## Part 4: Run grid search in Metaflow code
 Let's run a grid search over quantization and model variations.
 
 ```bash
