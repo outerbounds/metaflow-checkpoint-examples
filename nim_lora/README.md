@@ -1,4 +1,4 @@
-# Training a Custom LoRA Adapter with Metaflow on @nvidia 
+# Training a Custom LoRA Adapter with Metaflow 
 
 ## Setup
 
