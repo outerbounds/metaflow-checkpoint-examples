@@ -80,7 +80,12 @@ class FinetuneLlama3LoRA(FlowSpec):
     @checkpoint
     @model(load="model_reference")
     @gpu_profile(interval=1)
-    @nvidia
+    @kubernetes(
+        gpu=1,
+        cpu=12,
+        memory=32000,
+        image="registry.hub.docker.com/valayob/gpu-base-image:0.0.9",
+    )
     @step
     def sft(self):
         import os
@@ -112,6 +117,11 @@ class FinetuneLlama3LoRA(FlowSpec):
             self.merged_model = current.model.save(
                 merge_output_dirname, label="lora_fused"
             )
+
+        trainer.push_to_hub(
+            model_name=self.script_args.model_name,
+            finetuned_from=self.script_args.model_name,
+        )
         self.next(self.end)
 
     @step

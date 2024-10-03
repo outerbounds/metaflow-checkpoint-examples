@@ -54,6 +54,7 @@ class ScriptArguments:
     save_steps: Optional[int] = field(default=0)
     logging_steps: int = field(default=25)
     merge: bool = field(default=False)
+    hub_model_id: Optional[str] = field(default=None)
 
     def to_dict(self):
         return asdict(self)
@@ -98,12 +99,14 @@ def create_model(args, model_path):
 
 def create_trainer(args, tokenizer, model, smoke=False, callbacks=[]):
     training_arguments = TrainingArguments(
+        hub_model_id=args.hub_model_id,
+        push_to_hub=True,
         # Where/how to write results?
         output_dir=args.output_dir,
         logging_steps=1 if smoke else args.logging_steps,
         disable_tqdm=True,
         # How long to train?
-        max_steps=3 if smoke else args.max_steps,
+        max_steps=1 if smoke else args.max_steps,
         num_train_epochs=args.num_train_epochs,
         # How to train?
         per_device_train_batch_size=args.per_device_train_batch_size,
@@ -165,10 +168,7 @@ def gen_batches_train(args):
 
 def save_model(args, trainer, dirname="final", merge_dirname="final_merged_checkpoint"):
     output_dir = os.path.join(args.output_dir, dirname)
-    trainer.model.save_pretrained(output_dir)
-
-    del trainer.model
-    torch.cuda.empty_cache()
+    trainer.save_model(args.output_dir)
 
     if args.merge:
         """
@@ -183,7 +183,7 @@ def save_model(args, trainer, dirname="final", merge_dirname="final_merged_check
         model.save_pretrained(output_merged_dir, safe_serialization=True)
         return output_dir, output_merged_dir
     else:
-        return output_dir, None
+        return args.output_dir, None
 
 
 def download_latest_checkpoint(

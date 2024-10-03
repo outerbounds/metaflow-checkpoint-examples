@@ -1,8 +1,8 @@
 {
     "local_rank": -1,
-    "per_device_train_batch_size": 16,
+    "per_device_train_batch_size": 4,
     "per_device_eval_batch_size": 16,
-    "gradient_accumulation_steps": 17,
+    "gradient_accumulation_steps": 20,
     "learning_rate": 3e-4,
     "max_grad_norm": 0.3,
     "weight_decay": 0.01,
@@ -18,7 +18,7 @@
     "bnb_4bit_quant_type": "nf4",
     "num_train_epochs": 1,
     "fp16": false,
-    "bf16": true,
+    "bf16": false,
     "packing": false,
     "gradient_checkpointing": false,
     "optim": "adamw_torch",
@@ -29,5 +29,6 @@
     "save_steps": 200,
     "logging_steps": 5,
     "merge": false,
-    "output_dir": "./lora_checkpoints"
+    "output_dir": "./lora_checkpoints",
+    "hub_model_id": "llama3.1-ob"
 }
