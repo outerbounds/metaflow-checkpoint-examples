@@ -51,3 +51,5 @@ mnist_torch_vanilla/model_checkpoints/*
 mnist_torch_vanilla/model_checkpoints_*/*
 mnist_torch_vanilla/MNIST/*
 mnist_torch_vanilla/checkpoint_downloads/*
+
+llama_factory/LLama-Factory/*
