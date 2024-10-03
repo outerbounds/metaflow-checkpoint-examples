@@ -76,15 +76,24 @@ class FinetuneLlama3LoRA(FlowSpec):
         )
         self.next(self.sft)
 
-    @environment(vars={"TOKENIZERS_PARALLELISM": "true"})
+    @environment(
+        vars={
+            "TOKENIZERS_PARALLELISM": "true",
+        }
+    )
     @checkpoint
     @model(load="model_reference")
     @gpu_profile(interval=1)
-    @nvidia
+    @kubernetes(
+        gpu=1,
+        cpu=12,
+        memory=32000,
+        image="registry.hub.docker.com/valayob/gpu-base-image:0.0.9",
+    )
     @step
     def sft(self):
         import os
-        from my_peft_tools import create_model, create_trainer, save_model
+        from my_peft_tools import create_model, create_trainer, save_model, push_to_hub
         from hf_trainer_callback import MetaflowCheckpointCallback
 
         model, tokenizer = create_model(
@@ -111,6 +120,13 @@ class FinetuneLlama3LoRA(FlowSpec):
             # within Metaflow also enabling a means to track thier lineage.
             self.merged_model = current.model.save(
                 merge_output_dirname, label="lora_fused"
+            )
+
+        if self.script_args.push_to_hub:
+            push_to_hub(
+                trainer,
+                self.script_args.model_name,
+                # This is the model it was finetuned on.
             )
         self.next(self.end)
 

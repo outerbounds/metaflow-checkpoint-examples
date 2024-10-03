@@ -16,9 +16,43 @@ from transformers import (
     TrainingArguments,
 )
 from trl import SFTTrainer
+from huggingface_hub import upload_folder
+from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
 
 
 torch.manual_seed(42)
+
+
+def push_to_hub(
+    trainer,
+    finetuned_from,
+    commit_message="End of Training Run",
+    blocking=True,
+):
+    """
+    Ideally call this function once you have saved the model and then want to push the model to hub.
+    """
+    from huggingface_hub import upload_folder
+    from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
+
+    if trainer.hub_model_id is None:
+        trainer.init_hf_repo()
+
+    _readme_path = os.path.join(trainer.args.output_dir, "README.md")
+    if os.path.exists(_readme_path):
+        os.remove(_readme_path)
+
+    trainer.create_model_card(
+        finetuned_from=finetuned_from,
+    )
+
+    return upload_folder(
+        repo_id=trainer.hub_model_id,
+        folder_path=trainer.args.output_dir,
+        commit_message=commit_message,
+        run_as_future=not blocking,
+        ignore_patterns=["_*", f"{PREFIX_CHECKPOINT_DIR}-*"],
+    )
 
 
 @dataclass
@@ -54,6 +88,12 @@ class ScriptArguments:
     save_steps: Optional[int] = field(default=0)
     logging_steps: int = field(default=25)
     merge: bool = field(default=False)
+    hub_model_id: Optional[str] = field(default=None)
+    push_to_hub: bool = field(default=False)
+
+    def __post_init__(self):
+        if self.push_to_hub and self.hub_model_id is None:
+            raise ValueError("hub_model_id is required for push_to_hub=True")
 
     def to_dict(self):
         return asdict(self)
@@ -98,12 +138,13 @@ def create_model(args, model_path):
 
 def create_trainer(args, tokenizer, model, smoke=False, callbacks=[]):
     training_arguments = TrainingArguments(
+        hub_model_id=args.hub_model_id,
         # Where/how to write results?
         output_dir=args.output_dir,
         logging_steps=1 if smoke else args.logging_steps,
         disable_tqdm=True,
         # How long to train?
-        max_steps=3 if smoke else args.max_steps,
+        max_steps=1 if smoke else args.max_steps,
         num_train_epochs=args.num_train_epochs,
         # How to train?
         per_device_train_batch_size=args.per_device_train_batch_size,
@@ -165,10 +206,7 @@ def gen_batches_train(args):
 
 def save_model(args, trainer, dirname="final", merge_dirname="final_merged_checkpoint"):
     output_dir = os.path.join(args.output_dir, dirname)
-    trainer.model.save_pretrained(output_dir)
-
-    del trainer.model
-    torch.cuda.empty_cache()
+    trainer.save_model(args.output_dir)
 
     if args.merge:
         """
@@ -183,7 +221,7 @@ def save_model(args, trainer, dirname="final", merge_dirname="final_merged_check
         model.save_pretrained(output_merged_dir, safe_serialization=True)
         return output_dir, output_merged_dir
     else:
-        return output_dir, None
+        return args.output_dir, None
 
 
 def download_latest_checkpoint(
