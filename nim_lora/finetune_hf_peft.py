@@ -74,6 +74,49 @@ class FinetuneLlama3LoRA(FlowSpec):
                 "*.safetensors",
             ],
         )
+        self.next(self.preprocess_dataset)
+
+    @step
+    def preprocess_dataset(self):
+        """
+        This is an example of the pre-processing function that will pre-process some data
+        and transform it into the format which is acceptable during training.
+
+        Users can modify the function as per their requirements and even plugin custom datasets
+        that might be coming from outside huggingface.
+
+        The pattern is fine as long as the dataset can fit in memory. If the dataset is too large then
+        a better pattern is to save the dataset in the Metaflow's datastore (like S3) and then pull the
+        dataset based on the need.
+        """
+        from datasets import load_dataset
+
+        dataset = load_dataset(
+            self.script_args.dataset_name, streaming=True, split="train"
+        )
+        self.training_dataset = []
+        for sample in iter(dataset):
+            instruction = str(sample["instruction"])
+            input_text = str(sample.get("input", ""))
+            out_text = str(sample["output"])
+            if not input_text:
+                formatted_prompt = (
+                    f"<|begin_of_text|><|start_header_id|>user<|end_header_id|>\n\n"
+                    f"Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n### Instruction:\n{instruction}\n\n### Response:\n"
+                    f"<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
+                    f"{out_text}"
+                    f"<|eot_id|><|end_of_text|>"
+                )
+            else:
+                formatted_prompt = (
+                    f"<|begin_of_text|><|start_header_id|>user<|end_header_id|>\n\n"
+                    f"Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n### Instruction:\n{instruction}\n\n### Input:\n{input_text}\n\n### Response:\n"
+                    f"<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
+                    f"{out_text}"
+                    f"<|eot_id|><|end_of_text|>"
+                )
+            self.training_dataset.append({"text": formatted_prompt})
+
         self.next(self.sft)
 
     @environment(
@@ -103,6 +146,9 @@ class FinetuneLlama3LoRA(FlowSpec):
             self.script_args,
             tokenizer,
             model,
+            # The `self.training_dataset` is created in the previous step
+            # after some pre-processing.
+            self.training_dataset,
             smoke=self.smoke,
             callbacks=[
                 MetaflowCheckpointCallback(),

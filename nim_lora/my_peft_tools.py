@@ -136,7 +136,7 @@ def create_model(args, model_path):
     return model, tokenizer
 
 
-def create_trainer(args, tokenizer, model, smoke=False, callbacks=[]):
+def create_trainer(args, tokenizer, model, dataset, smoke=False, callbacks=[]):
     training_arguments = TrainingArguments(
         hub_model_id=args.hub_model_id,
         # Where/how to write results?
@@ -163,7 +163,12 @@ def create_trainer(args, tokenizer, model, smoke=False, callbacks=[]):
         task_type="CAUSAL_LM",
         target_modules=["q_proj", "v_proj"],
     )
-    train_dataset = Dataset.from_generator(lambda: gen_batches_train(args))
+
+    def _generator_dataset():
+        for sample in dataset:
+            yield {"text": sample["text"]}
+
+    train_dataset = Dataset.from_generator(lambda: _generator_dataset())
     trainer = SFTTrainer(
         model=model,
         args=training_arguments,
@@ -176,32 +181,6 @@ def create_trainer(args, tokenizer, model, smoke=False, callbacks=[]):
         callbacks=callbacks,
     )
     return trainer
-
-
-def gen_batches_train(args):
-    ds = load_dataset(args.dataset_name, streaming=True, split="train")
-    for sample in iter(ds):
-        instruction = str(sample["instruction"])
-        input_text = str(sample.get("input", ""))
-        out_text = str(sample["output"])
-        if not input_text:
-            formatted_prompt = (
-                f"<|begin_of_text|><|start_header_id|>user<|end_header_id|>\n\n"
-                f"Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n### Instruction:\n{instruction}\n\n### Response:\n"
-                f"<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
-                f"{out_text}"
-                f"<|eot_id|><|end_of_text|>"
-            )
-        else:
-            formatted_prompt = (
-                f"<|begin_of_text|><|start_header_id|>user<|end_header_id|>\n\n"
-                f"Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n### Instruction:\n{instruction}\n\n### Input:\n{input_text}\n\n### Response:\n"
-                f"<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
-                f"{out_text}"
-                f"<|eot_id|><|end_of_text|>"
-            )
-
-        yield {"text": formatted_prompt}
 
 
 def save_model(args, trainer, dirname="final", merge_dirname="final_merged_checkpoint"):
