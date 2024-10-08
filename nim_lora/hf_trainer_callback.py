@@ -70,7 +70,7 @@ class MetaflowCheckpointCallback(TrainerCallback):
         dir_prefix = f"{PREFIX_CHECKPOINT_DIR}-{state.global_step}"
         chckpt_path = os.path.join(args.output_dir, dir_prefix)
         self.latest_checkpoint = self.checkpointer.save(
-            [chckpt_path, args.logging_dir],
+            chckpt_path,
             metadata={
                 "global_step": state.global_step,
                 "epoch": round(state.epoch or 0, 3),

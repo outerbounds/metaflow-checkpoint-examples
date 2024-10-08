@@ -90,6 +90,8 @@ class ScriptArguments:
     merge: bool = field(default=False)
     hub_model_id: Optional[str] = field(default=None)
     push_to_hub: bool = field(default=False)
+    report_to: str = field(default="tensorboard")
+    logging_dir: str = field(default="./logs")
 
     def __post_init__(self):
         if self.push_to_hub and self.hub_model_id is None:
@@ -141,6 +143,8 @@ def create_trainer(args, tokenizer, model, dataset, smoke=False, callbacks=[]):
         hub_model_id=args.hub_model_id,
         # Where/how to write results?
         output_dir=args.output_dir,
+        report_to=args.report_to,
+        logging_dir=args.logging_dir,
         logging_steps=1 if smoke else args.logging_steps,
         disable_tqdm=True,
         # How long to train?
