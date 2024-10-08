@@ -15,6 +15,7 @@ from metaflow import (
     kubernetes,
     S3,
     model,
+    tensorboard,
     checkpoint,
     current,
     environment,
@@ -33,6 +34,7 @@ from exceptions import GatedRepoError, GATED_HF_ORGS
         "peft": "0.12.0",
         "trl": "0.10.1",
         "accelerate": "0.34.2",
+        "tensorboard": "2.17.1",
         "bitsandbytes": "0.43.3",
         "sentencepiece": "0.2.0",
         "safetensors": "0.4.5",
@@ -124,6 +126,7 @@ class FinetuneLlama3LoRA(FlowSpec):
             "TOKENIZERS_PARALLELISM": "true",
         }
     )
+    @tensorboard
     @checkpoint
     @model(load="model_reference")
     @gpu_profile(interval=1)
@@ -139,6 +142,7 @@ class FinetuneLlama3LoRA(FlowSpec):
         from my_peft_tools import create_model, create_trainer, save_model, push_to_hub
         from hf_trainer_callback import MetaflowCheckpointCallback
 
+        self.script_args.logging_dir = self.obtb.log_dir
         model, tokenizer = create_model(
             self.script_args, current.model.loaded["model_reference"]
         )
