@@ -50,9 +50,17 @@ GRADIO_SHARE=1 llamafactory-cli webchat infer_llama3.2_instruct_lora.json
 python single_train_flow.py run --training-config train_llama3.2_instruct_lora.json
 ```
 
-## Part 4: Run grid search in Metaflow code
+## Part 4: Running Llama Factory Remotely with FastBakery
+    
+```bash
+python fb_single_train.py --environment=fast-bakery run --training-config train_llama3.2_instruct_lora.json
+```
+
+
+## Part 5: Run grid search in Metaflow code
 Let's run a grid search over quantization and model variations.
 
 ```bash
 python flow.py run
 ```
+
