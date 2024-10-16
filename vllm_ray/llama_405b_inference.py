@@ -97,6 +97,8 @@ class Llama405bVLLMFlow(FlowSpec):
     )  # The `@model` decorator will the load the model from s3 into a tmpfs path (which makes loading a lot faster)
     # Since the `self.llama_model` contained a reference to the model in Metaflow's datastore, `@model` will load the model
     # onto a path provided in the `load` argument.
+    # For the distributed inference scenario, we need to ensure that the model is loaded on the same path for all the
+    # workers. When ray will be used to load the model on the workers, the path cannot be randomly generated tempdir.
     @model(load=[("llama_model", "/metaflow_temp/llama_models")])
     @step
     def ray_inference(self):
