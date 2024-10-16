@@ -136,7 +136,9 @@ class LlamaFactorySingleJob(FlowSpec):
 
     @step
     def join(self, inputs):
-        self.merge_artifacts(inputs)
+        for i in inputs:
+            if getattr(i, "trained_model_info", None):
+                self.trained_model_info = i.trained_model_info
         self.next(self.end)
 
     @step
