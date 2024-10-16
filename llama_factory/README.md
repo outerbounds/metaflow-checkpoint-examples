@@ -56,7 +56,6 @@ python single_train_flow.py run --training-config train_llama3.2_instruct_lora.j
 python fb_single_train.py --environment=fast-bakery run --training-config train_llama3.2_instruct_lora.json
 ```
 
-
 ## Part 5: Run grid search in Metaflow code
 Let's run a grid search over quantization and model variations.
 
@@ -64,3 +63,16 @@ Let's run a grid search over quantization and model variations.
 python flow.py run
 ```
 
+## Part 6: Running Llama Factory Remotely with FastBakery and Deepspeed (Single Node Multi-GPU)
+
+```bash
+python deepspeed_single_node.py --environment=fast-bakery run --training-config train_llama3.1_instruct_deepspeed.json
+```
+
+
+## Part 7: Running Llama Factory Remotely with FastBakery and Deepspeed (Multi Node Multi-GPU)
+    
+Ensure that `metaflow-torchrun` is installed in your environment. You can `pip install metaflow-torchrun` to install it.
+```bash
+python deepspeed_multi_node.py --environment=fast-bakery run --training-config train_llama3.1_instruct_deepspeed.json
+```
