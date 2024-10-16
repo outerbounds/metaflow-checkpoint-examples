@@ -10,6 +10,14 @@
     ```
 
 ## Executing the Flow On Outerbounds Platform
+
+### Small Models (7B Parameters)
 ```bash
 python flow.py --environment=fast-bakery run 
+```
+
+
+### Large Models (405B Parameters)
+```bash
+python llama_405b_inference.py --environment=fast-bakery run 
 ```
