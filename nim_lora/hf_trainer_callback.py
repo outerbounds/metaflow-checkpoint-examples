@@ -69,6 +69,9 @@ class MetaflowCheckpointCallback(TrainerCallback):
 
         dir_prefix = f"{PREFIX_CHECKPOINT_DIR}-{state.global_step}"
         chckpt_path = os.path.join(args.output_dir, dir_prefix)
+        _metrics_dict = {}
+        if len(state.log_history) > 0:
+            _metrics_dict = _make_metrics_dict(state.log_history[-1], self._metrics)
         self.latest_checkpoint = self.checkpointer.save(
             chckpt_path,
             metadata={
@@ -76,7 +79,7 @@ class MetaflowCheckpointCallback(TrainerCallback):
                 "epoch": round(state.epoch or 0, 3),
                 "saved_from": "HuggingfaceTrainer",
                 "checkpoint_dir": dir_prefix,
-                **_make_metrics_dict(state.log_history[-1], self._metrics),
+                **_metrics_dict,
             },
             name=self._name,
             latest=True,
