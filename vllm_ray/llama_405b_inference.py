@@ -28,11 +28,9 @@ class Llama405bVLLMFlow(FlowSpec):
     # Users can comment out the `kubernetes` decorator once the model
     # has been downloaded for faster local iterations.
     @kubernetes(
-        cpu=100,
-        memory=1500 * 1000,  # Set memory requirements in MB
+        cpu=12,
+        memory=60 * 1000,  # Set memory requirements in MB
         disk=1500 * 1000,  # Set disk space in MB
-        use_tmpfs=True,  # Use in-memory filesystem for faster I/O
-        tmpfs_size=1000 * 1000,  # Set tmpfs size in MB
     )
     @pypi(
         python="3.11.5",
