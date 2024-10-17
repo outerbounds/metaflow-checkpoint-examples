@@ -48,6 +48,7 @@ class Llama405bVLLMFlow(FlowSpec):
     @environment(
         vars={
             "HF_HUB_ENABLE_HF_TRANSFER": "1",  # Enable Hugging Face transfer acceleration
+            "HF_TOKEN": "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",  # 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
         }
     )
     # Hugging Face Hub should download the model into memory for faster upload/download processes.
@@ -95,6 +96,7 @@ class Llama405bVLLMFlow(FlowSpec):
         gpu=NUM_GPUS_PER_NODE,  # Allocate 8 GPUs for the task
         shared_memory=40 * 1000,  # Allocate 40GB of shared memory
         node_selector="gpu.nvidia.com/class=A100_NVLINK_80GB",  # Select A100 NVLINK 80GB GPU nodes
+        image="registry.hub.docker.com/valayob/gpu-base-image:0.0.13",
     )
     @environment(
         vars={
