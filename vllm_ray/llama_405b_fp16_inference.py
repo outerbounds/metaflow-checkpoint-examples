@@ -17,8 +17,12 @@ from metaflow.cards import Table, Artifact, Markdown
 
 class Llama405bVLLMFlow(FlowSpec):
 
+    NUM_GPUS_PER_NODE = 8
+
+    NUM_NODES_TOTAL = 2
+
     # ID of the model from Hugging Face that we will download and use
-    model_id = "meta-llama/Llama-3.1-405B-Instruct-FP8"
+    model_id = "meta-llama/Llama-3.1-405B-Instruct"
 
     @step
     def start(self):
@@ -26,7 +30,7 @@ class Llama405bVLLMFlow(FlowSpec):
         self.next(self.pull_model_from_huggingface)
 
     # Users can comment out the `kubernetes` decorator once the model
-    # has been downloaded for faster local iterations.
+    # # has been downloaded for faster local iterations.
     @kubernetes(
         cpu=100,
         memory=1500 * 1000,  # Set memory requirements in MB
@@ -62,13 +66,14 @@ class Llama405bVLLMFlow(FlowSpec):
                 "*.json",
                 "tokenizer.*",
             ],  # Download only model weights and tokenizer files
-            max_workers=50,  # Use up to 50 threads for parallel download
+            max_workers=100,  # Use up to 100 threads for parallel download
         )
         end_time = time.time()
         self.time_taken = end_time - start_time
+        current.graph
 
         # Move to the next step: distributed inference with Ray
-        self.next(self.ray_inference, num_parallel=2)
+        self.next(self.ray_inference, num_parallel=self.NUM_NODES_TOTAL)
 
     @metaflow_ray(
         all_nodes_started_timeout=20
@@ -87,7 +92,7 @@ class Llama405bVLLMFlow(FlowSpec):
         cpu=50,
         memory=1000 * 1000,  # Set memory to 1TB
         disk=1500 * 1000,  # Set disk space to 1.5TB
-        gpu=8,  # Allocate 8 GPUs for the task
+        gpu=NUM_GPUS_PER_NODE,  # Allocate 8 GPUs for the task
         shared_memory=40 * 1000,  # Allocate 40GB of shared memory
         node_selector="gpu.nvidia.com/class=A100_NVLINK_80GB",  # Select A100 NVLINK 80GB GPU nodes
     )
@@ -102,7 +107,7 @@ class Llama405bVLLMFlow(FlowSpec):
     # Since the `self.llama_model` contains a reference to the model in Metaflow's datastore,
     # `@model` will load the model onto a path provided in the `load` argument.
     # The model must be loaded on the same path across all workers for distributed inference.
-    @model(load=[("llama_model", "/metaflow_temp/llama_models")])
+    @model(load=[("llama_model", "./llama_model_dir")])
     @step
     def ray_inference(self):
         from vllm import LLM, SamplingParams
@@ -118,7 +123,8 @@ class Llama405bVLLMFlow(FlowSpec):
         # Initialize the LLM model for distributed inference using Ray
         llm = LLM(
             model=current.model.loaded["llama_model"],
-            tensor_parallel_size=8,  # Use 8 GPUs for parallel execution
+            tensor_parallel_size=self.NUM_GPUS_PER_NODE
+            * self.NUM_NODES_TOTAL,  # We set Tensor Parallel Size Based on the Number of GPUs setup in the cluster.
             enforce_eager=False,  # Skip CUDA graph calculation for faster inference
             worker_use_ray=True,  # Use Ray for distributed worker management
             gpu_memory_utilization=0.90,  # Utilize 90% of available GPU memory

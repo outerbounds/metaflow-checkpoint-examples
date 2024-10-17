@@ -21,3 +21,7 @@ python flow.py --environment=fast-bakery run
 ```bash
 python llama_405b_inference.py --environment=fast-bakery run 
 ```
+
+```bash
+python llama_405b_fp16_inference.py --environment=fast-bakery run 
+```
