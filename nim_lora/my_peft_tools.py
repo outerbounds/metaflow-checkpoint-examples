@@ -148,7 +148,7 @@ def create_trainer(args, tokenizer, model, dataset, smoke=False, callbacks=[]):
         logging_steps=1 if smoke else args.logging_steps,
         disable_tqdm=True,
         # How long to train?
-        max_steps=1 if smoke else args.max_steps,
+        max_steps=40 if smoke else args.max_steps,
         num_train_epochs=args.num_train_epochs,
         # How to train?
         per_device_train_batch_size=args.per_device_train_batch_size,
@@ -188,9 +188,8 @@ def create_trainer(args, tokenizer, model, dataset, smoke=False, callbacks=[]):
 
 
 def save_model(args, trainer, dirname="final", merge_dirname="final_merged_checkpoint"):
-    output_dir = os.path.join(args.output_dir, dirname)
-    trainer.save_model(args.output_dir)
-
+    output_dir = dirname
+    trainer.save_model(output_dir)
     if args.merge:
         """
         This conditional block merges the LoRA adapter with the original model weights.
@@ -200,11 +199,11 @@ def save_model(args, trainer, dirname="final", merge_dirname="final_merged_check
             output_dir, device_map="auto", torch_dtype=torch.bfloat16
         )
         model = model.merge_and_unload()
-        output_merged_dir = os.path.join(args.output_dir, merge_dirname)
+        output_merged_dir = merge_dirname
         model.save_pretrained(output_merged_dir, safe_serialization=True)
         return output_dir, output_merged_dir
     else:
-        return args.output_dir, None
+        return output_dir, None
 
 
 def download_latest_checkpoint(

@@ -29,8 +29,8 @@ from exceptions import GatedRepoError, GATED_HF_ORGS
     python="3.12",
     packages={
         "datasets": "2.21.0",
-        "torch": "2.4.1",
-        "transformers": "4.44.2",
+        "torch": "2.4.0",
+        "transformers": "4.45.0",
         "peft": "0.12.0",
         "trl": "0.10.1",
         "accelerate": "0.34.2",
@@ -38,6 +38,8 @@ from exceptions import GatedRepoError, GATED_HF_ORGS
         "bitsandbytes": "0.43.3",
         "sentencepiece": "0.2.0",
         "safetensors": "0.4.5",
+        "vllm": "0.6.3",  # VLLM package for large language model inference
+        "setuptools": "74.1.2",  # Python package installer
     },
 )
 class FinetuneLlama3LoRA(FlowSpec):
@@ -134,7 +136,7 @@ class FinetuneLlama3LoRA(FlowSpec):
         gpu=1,
         cpu=12,
         memory=32000,
-        image="registry.hub.docker.com/valayob/gpu-base-image:0.0.9",
+        image="registry.hub.docker.com/valayob/gpu-base-image:0.0.13",
     )
     @step
     def sft(self):
@@ -178,6 +180,32 @@ class FinetuneLlama3LoRA(FlowSpec):
                 self.script_args.model_name,
                 # This is the model it was finetuned on.
             )
+
+        # placeholder for inference using vllm
+        from vllm import LLM, SamplingParams
+        from vllm.lora.request import LoRARequest
+
+        llm = LLM(
+            model=current.model.loaded["model_reference"],
+            enable_lora=True,
+            max_lora_rank=256,
+            enforce_eager=True,
+            gpu_memory_utilization=0.98,
+        )
+
+        test = """<|start_header_id|>user<|end_header_id|>\n\nHi!<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"""
+
+        sampling_params = SamplingParams(
+            temperature=0.3, top_p=0.95, seed=42, max_tokens=128
+        )
+
+        print(os.listdir(output_dirname))
+
+        outputs = llm.generate(
+            test,
+            sampling_params,
+            lora_request=LoRARequest("sql_adapter", 1, output_dirname),
+        )
         self.next(self.end)
 
     @step
