@@ -95,6 +95,7 @@ class Llama405bVLLMFlow(FlowSpec):
         gpu=NUM_GPUS_PER_NODE,  # Allocate 8 GPUs for the task
         shared_memory=40 * 1000,  # Allocate 40GB of shared memory
         node_selector="gpu.nvidia.com/class=A100_NVLINK_80GB",  # Select A100 NVLINK 80GB GPU nodes
+        image="registry.hub.docker.com/valayob/gpu-base-image:0.0.13",
     )
     @environment(
         vars={
@@ -103,7 +104,7 @@ class Llama405bVLLMFlow(FlowSpec):
             "VLLM_WORKER_MULTIPROC_METHOD": "spawn",
         }
     )
-    # The `@model` decorator loads the model from S3 into tmpfs for faster loading.
+    # The `@model` decorator loads the model from S3
     # Since the `self.llama_model` contains a reference to the model in Metaflow's datastore,
     # `@model` will load the model onto a path provided in the `load` argument.
     # The model must be loaded on the same path across all workers for distributed inference.
