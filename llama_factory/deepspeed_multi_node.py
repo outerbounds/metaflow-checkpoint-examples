@@ -10,7 +10,6 @@ from metaflow import (
     pypi,
     huggingface_hub,
     conda,
-    deepspeed,
     card,
     IncludeFile,
     torchrun,
@@ -71,6 +70,7 @@ class LlamaFactorySingleJob(FlowSpec):
         memory=100 * 1000,
         cpu=40,
         shared_memory=15 * 1000,  # Allocate 40GB of shared memory
+        node_selector="gpu.coreweave.cloud/driver-version=535.183.06,gpu.nvidia.com/class=A100_NVLINK_80GB,topology.kubernetes.io/region=LAS1",
     )  # image contains git as a vendored dependency
     @step
     def tune(self):
@@ -81,6 +81,9 @@ class LlamaFactorySingleJob(FlowSpec):
         from git import Repo
         import tempfile
         import shutil
+        import time
+
+        # time.sleep(1000)
 
         # We need to clone the LLaMA-Factory repository so that
         # the datasets within the repository can be accessed.

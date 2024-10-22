@@ -133,9 +133,12 @@ class FinetuneLlama3LoRA(FlowSpec):
     @model(load="model_reference")
     @gpu_profile(interval=1)
     @kubernetes(
-        gpu=1,
-        cpu=12,
-        memory=32000,
+        cpu=8,
+        gpu=4,
+        disk=300_000,
+        memory=64_000,
+        node_selector="gpu.coreweave.cloud/driver-version=535.183.06,gpu.nvidia.com/class=A100_NVLINK_80GB,topology.kubernetes.io/region=LAS1",
+        # node_selector="gpu.nvidia.com/class=A100_NVLINK_80GB",
         image="registry.hub.docker.com/valayob/gpu-base-image:0.0.13",
     )
     @step
@@ -181,6 +184,20 @@ class FinetuneLlama3LoRA(FlowSpec):
                 # This is the model it was finetuned on.
             )
 
+        self.next(self.inference)
+
+    @model(load=["model_reference", "model"])
+    @gpu_profile(interval=1)
+    @kubernetes(
+        cpu=8,
+        gpu=4,
+        disk=300_000,
+        memory=64_000,
+        node_selector="gpu.nvidia.com/class=A100_NVLINK_80GB",
+        image="registry.hub.docker.com/valayob/gpu-base-image:0.0.13",
+    )
+    @step
+    def inference(self):
         # placeholder for inference using vllm
         from vllm import LLM, SamplingParams
         from vllm.lora.request import LoRARequest
@@ -188,24 +205,32 @@ class FinetuneLlama3LoRA(FlowSpec):
         llm = LLM(
             model=current.model.loaded["model_reference"],
             enable_lora=True,
+            #   tensor_parallel_size=torch.cuda.device_count(),
             max_lora_rank=256,
             enforce_eager=True,
             gpu_memory_utilization=0.98,
         )
 
-        test = """<|start_header_id|>user<|end_header_id|>\n\nHi!<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"""
+        test = """<|start_header_id|>user<|end_header_id|>
 
+        Hi!<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+        
+        """
         sampling_params = SamplingParams(
             temperature=0.3, top_p=0.95, seed=42, max_tokens=128
         )
 
-        print(os.listdir(output_dirname))
+        print(
+            f"os.listdir(output_dirname): {os.listdir(current.model.loaded['model'])}"
+        )
 
         outputs = llm.generate(
             test,
             sampling_params,
-            lora_request=LoRARequest("sql_adapter", 1, output_dirname),
+            lora_request=LoRARequest("sql_adapter", 1, current.model.loaded["model"]),
         )
+
+        print(f"RESPONSE:\n{outputs[0].outputs[0].text}")
         self.next(self.end)
 
     @step
