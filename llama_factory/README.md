@@ -23,14 +23,6 @@ Start the llama factory web UI
 GRADIO_SHARE=1 llamafactory-cli webui
 ```
 
-then, start an Outerbounds app
-```bash
-GRADIO_SERVER_PORT=6000 llamafactory-cli webui
-outerbounds app start --port 6000 --name llamafactorywebui
-```
-
-after ~2 minutes you'll be able to visit the app URL.
-
 ## Part 2: Tune an LLM in Llama Factory using the CLI
 
 NOTE: https://github.com/hiyouga/LLaMA-Factory/tree/main?tab=readme-ov-file#use-wb-logger
