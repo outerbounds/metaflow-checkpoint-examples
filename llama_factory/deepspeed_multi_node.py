@@ -10,7 +10,6 @@ from metaflow import (
     pypi,
     huggingface_hub,
     conda,
-    deepspeed,
     card,
     IncludeFile,
     torchrun,
@@ -21,7 +20,7 @@ from metaflow.profilers import gpu_profile
 LLAMA_FACTORY_GIT_URL = "https://github.com/hiyouga/LLaMA-Factory.git"
 
 
-class LlamaFactorySingleJob(FlowSpec):
+class LlamaFactoryMultinodeJob(FlowSpec):
 
     training_config = IncludeFile(
         "training-config",
@@ -38,6 +37,54 @@ class LlamaFactorySingleJob(FlowSpec):
 
     @step
     def start(self):
+        import json
+
+        self.hyperparameters = json.loads(self.training_config)
+        self.next(self.pull_model_from_huggingface)
+
+    # Users can comment out the `kubernetes` decorator once the model
+    # # has been downloaded for faster local iterations.
+    @kubernetes(
+        cpu=40,
+        memory=150 * 1000,  # Set memory requirements in MB
+        disk=1500 * 1000,  # Set disk space in MB
+        use_tmpfs=True,  # Use in-memory filesystem for faster I/O
+        tmpfs_size=1000 * 1000,  # Set tmpfs size in MB
+    )
+    @pypi(
+        python="3.11.5",
+        packages={
+            "huggingface-hub[hf_transfer]": "0.25.2"
+        },  # Installing Hugging Face Hub with transfer feature
+    )
+    # @secrets # Use this decorator to ensure HF_TOKEN is loaded in the environment for authenticated access
+    @environment(
+        vars={
+            "HF_HUB_ENABLE_HF_TRANSFER": "1",  # Enable Hugging Face transfer acceleration
+        }
+    )
+    # Hugging Face Hub should download the model into memory for faster upload/download processes.
+    # If tmpfs settings are disabled, set `temp_dir_root` to None.
+    @huggingface_hub(temp_dir_root="/metaflow_temp/checkpoints")
+    @step
+    def pull_model_from_huggingface(self):
+        import time
+        import json
+
+        # Record the time taken to download the model
+        start_time = time.time()
+        self.base_model = current.huggingface_hub.snapshot_download(
+            repo_id=self.hyperparameters["model_name_or_path"],
+            allow_patterns=[
+                "*.safetensors",
+                "*.json",
+                "tokenizer.*",
+            ],  # Download only model weights and tokenizer files
+            max_workers=40,  # Use up to 40 threads for parallel download
+        )
+        end_time = time.time()
+        self.time_taken = end_time - start_time
+        # Move to the next step: distributed inference with Ray
         self.next(self.tune, num_parallel=self.num_nodes)
 
     # Llama Factory will require setting HF_TOKEN which can be set via the
@@ -51,7 +98,7 @@ class LlamaFactorySingleJob(FlowSpec):
             "TOKENIZERS_PARALLELISM": "true",
         }
     )
-    @model
+    @model(load=[("base_model", "./base_model")])
     @tensorboard
     @pypi(
         python="3.11",
@@ -70,6 +117,7 @@ class LlamaFactorySingleJob(FlowSpec):
         gpu=4,
         memory=100 * 1000,
         cpu=40,
+        # Allocate the disk according to the need
         shared_memory=15 * 1000,  # Allocate 40GB of shared memory
     )  # image contains git as a vendored dependency
     @step
@@ -106,7 +154,8 @@ class LlamaFactorySingleJob(FlowSpec):
         env["MASTER_ADDR"] = current.parallel.main_ip
 
         self.output_dir = "llama3_lora"
-        self.hyperparameters = json.loads(self.training_config)
+
+        self.hyperparameters["model_name_or_path"] = current.model.loaded["base_model"]
         self.hyperparameters["logging_dir"] = self.obtb.log_dir
         self.hyperparameters["report_to"] = "tensorboard"
         self.hyperparameters["output_dir"] = self.output_dir
@@ -147,4 +196,4 @@ class LlamaFactorySingleJob(FlowSpec):
 
 
 if __name__ == "__main__":
-    LlamaFactorySingleJob()
+    LlamaFactoryMultinodeJob()
