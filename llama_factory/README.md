@@ -68,3 +68,10 @@ Ensure that `metaflow-torchrun` is installed in your environment. You can `pip i
 ```bash
 python deepspeed_multi_node.py --environment=fast-bakery run --training-config train_llama3.1_instruct_deepspeed.json
 ```
+
+## Part 7: Running Llama Factory Remotely with FastBakery and Deepspeed (Multi Node Multi-GPU) [llama-70B]
+    
+Ensure that `metaflow-torchrun` is installed in your environment. You can `pip install metaflow-torchrun` to install it.
+```bash
+python deepspeed_multi_node.py --environment=fast-bakery run --training-config train_llama3.1_70b_instruct_deepspeed.json
+```

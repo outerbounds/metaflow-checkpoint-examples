@@ -46,11 +46,12 @@ class LlamaFactoryMultinodeJob(FlowSpec):
     # # has been downloaded for faster local iterations.
     @kubernetes(
         cpu=40,
-        memory=150 * 1000,  # Set memory requirements in MB
+        memory=200 * 1000,  # Set memory requirements in MB
         disk=1500 * 1000,  # Set disk space in MB
         use_tmpfs=True,  # Use in-memory filesystem for faster I/O
-        tmpfs_size=1000 * 1000,  # Set tmpfs size in MB
+        tmpfs_size=150 * 1000,  # Set tmpfs size in MB
     )
+    @huggingface_hub(temp_dir_root="/metaflow_temp/checkpoints")
     @pypi(
         python="3.11.5",
         packages={
@@ -65,7 +66,6 @@ class LlamaFactoryMultinodeJob(FlowSpec):
     )
     # Hugging Face Hub should download the model into memory for faster upload/download processes.
     # If tmpfs settings are disabled, set `temp_dir_root` to None.
-    @huggingface_hub(temp_dir_root="/metaflow_temp/checkpoints")
     @step
     def pull_model_from_huggingface(self):
         import time
@@ -105,7 +105,7 @@ class LlamaFactoryMultinodeJob(FlowSpec):
         packages={
             "GitPython": "3.1.43",
             "tensorboard": "2.17.1",
-            "llamafactory[torch,metrics,vllm,liger-kernel,bitsandbytes,hqq,gptq,aqlm,vllm,galore,badam,adam-mini,qwen,modelscope] @ git+https://github.com/hiyouga/LLaMA-Factory.git": "@3df39f37e1b7988720f36729830889a4c05399b1",
+            "llamafactory[torch,metrics,vllm,liger-kernel,bitsandbytes,hqq,gptq,aqlm,vllm,galore,badam,adam-mini,qwen,modelscope] @ git+https://github.com/hiyouga/LLaMA-Factory.git": "@ea5f3ecd46d6c02f972ef68414408ed7d0d64491",
             "accelerate": "0.34.2",
             "transformers": "4.45.0",
             "deepspeed": "0.15.1",
@@ -115,10 +115,11 @@ class LlamaFactoryMultinodeJob(FlowSpec):
     @kubernetes(
         image="registry.hub.docker.com/valayob/gpu-base-image:0.0.13",
         gpu=4,
-        memory=100 * 1000,
-        cpu=40,
+        memory=600 * 1000,
+        cpu=100,
         # Allocate the disk according to the need
         shared_memory=15 * 1000,  # Allocate 40GB of shared memory
+        node_selector="gpu.nvidia.com/class=A100_NVLINK_80GB",  # Select A100 NVLINK 80GB GPU nodes
     )  # image contains git as a vendored dependency
     @step
     def tune(self):
@@ -155,7 +156,9 @@ class LlamaFactoryMultinodeJob(FlowSpec):
 
         self.output_dir = "llama3_lora"
 
-        self.hyperparameters["model_name_or_path"] = current.model.loaded["base_model"]
+        self.hyperparameters["model_name_or_path"] = os.path.abspath(
+            current.model.loaded["base_model"]
+        )
         self.hyperparameters["logging_dir"] = self.obtb.log_dir
         self.hyperparameters["report_to"] = "tensorboard"
         self.hyperparameters["output_dir"] = self.output_dir
