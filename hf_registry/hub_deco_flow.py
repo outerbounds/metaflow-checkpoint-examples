@@ -1,4 +1,3 @@
-from operator import is_
 from metaflow import (
     FlowSpec,
     current,
@@ -47,28 +46,43 @@ class HFCachedModelFlow(FlowSpec):
     @huggingface_hub
     @step
     def start(self):
-        self.hugging_face_model = current.huggingface_hub.snapshot_download(
+        self.model_reference_foo = current.huggingface_hub.snapshot_download(
             repo_id=self.model_name,
             force_download=self.force_download,
             allow_patterns="*"
             if self.allow_patterns is None
             else self.allow_patterns.split(","),
         )
+
+        self.next(self.in_step_load)
+
+    @pypi(**HUB_PYPI_PARAMETES)
+    @huggingface_hub(load=["google-bert/bert-base-uncased"])
+    @step
+    def in_step_load(self):
+        import os
+
+        model_path = current.huggingface_hub.loaded["google-bert/bert-base-uncased"]
+        print(
+            "Model is loaded in the directory",
+            model_path,
+            "contents of the directory : ",
+            os.listdir(model_path),
+        )
         self.next(self.end)
 
-    @model(load=["hugging_face_model"])
+    @model(load=["model_reference_foo"])
     @step
     def end(self):
         import os
 
-        print("using the huggingface model", self.hugging_face_model["metadata"])
         print(
             "Model is loaded in the directory",
-            current.model.loaded["hugging_face_model"],
+            current.model.loaded["model_reference_foo"],
         )
         print(
             "contents of the directory : ",
-            os.listdir(current.model.loaded["hugging_face_model"]),
+            os.listdir(current.model.loaded["model_reference_foo"]),
         )
 
 
