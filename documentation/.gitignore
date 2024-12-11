@@ -1,0 +1,6 @@
+**/model_directory/*
+**/checkpoint_dir/*
+**/models/*
+**/temp_files/*
+**/manual_load/*
+**/my-model-path/*

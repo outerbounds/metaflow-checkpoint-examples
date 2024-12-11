@@ -1,0 +1,1 @@
+nbdoc_update --srcdir . && nbdoc_build --srcdir . && doctoc model_usage.md
