@@ -107,7 +107,7 @@ class TextToVideo(FlowSpec, ConfigBase):
 
     def _sdxl_checkpoint_from_cache(self):
         checkpoints = list(
-            current.checkpoint.list(name="sdxl_model_pipeline", within_task=False)
+            current.checkpoint.list(name="sdxl_model_pipeline", full_namespace=True)
         )
         if len(checkpoints) > 0:
             return checkpoints[0]
