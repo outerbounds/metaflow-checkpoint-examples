@@ -18,7 +18,6 @@ class MnistTorchFlow(FlowSpec):
         from torch_train_mnist import train
 
         checkpoint_path = None
-        start_epoch = 0
         if current.checkpoint.is_loaded:
             # When users can call `current.checkpoint.save()` or `Checkpoint().save()`,
             # it informs Metaflow of what to load as a checkpoint in case of a failure.
@@ -26,21 +25,13 @@ class MnistTorchFlow(FlowSpec):
             # directory in the `current.checkpoint.directory`. Users can then deal with
             # the checkpoint path as they see fit.
             checkpoint_path = os.path.join(
-                current.checkpoint.directory, "best_model.pth"
-            )
-            start_epoch = int(
-                open(
-                    os.path.join(
-                        current.checkpoint.directory, "checkpoint_epoch_number"
-                    )
-                ).read()
+                current.checkpoint.directory, "checkpoint.pth"
             )
 
         self.best_loss, self.best_acc, self.latest_checkpoint = train(
             checkpoint_path=checkpoint_path,
             num_epochs=self.epochs,
             model_save_dir="./model_checkpoints/" + current.task_id,
-            start_epoch=start_epoch,
         )
         self.next(self.test)
 
@@ -50,7 +41,7 @@ class MnistTorchFlow(FlowSpec):
         import os
         from torch_train_mnist import test
 
-        test(os.path.join(current.model.loaded["latest_checkpoint"], "best_model.pth"))
+        test(os.path.join(current.model.loaded["latest_checkpoint"], "checkpoint.pth"))
         self.next(self.end)
 
     @step
