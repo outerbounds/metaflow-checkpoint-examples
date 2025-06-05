@@ -5,11 +5,11 @@
 - [Decorator: `@huggingface_hub`](#decorator-huggingface_hub)
   - [Parameters](#parameters)
   - [Examples](#examples)
-  - [Class: `current.huggingface_hub`](#class-currenthuggingface_hub)
+  - [Property: `current.huggingface_hub`](#property-currenthuggingface_hub)
     - [Attributes](#attributes)
     - [Method: `current.huggingface_hub.snapshot_download`](#method-currenthuggingface_hubsnapshot_download)
       - [Returns](#returns)
-    - [Class: `current.huggingface_hub.loaded`](#class-currenthuggingface_hubloaded)
+    - [Property: `current.huggingface_hub.loaded`](#property-currenthuggingface_hubloaded)
       - [Attributes](#attributes-1)
       - [Examples](#examples-1)
 - [Decorator: `@model`](#decorator-model)
@@ -21,7 +21,7 @@
     - [Raises](#raises)
   - [Method: `current.model.load`](#method-currentmodelload)
     - [Returns](#returns-2)
-  - [Class: `current.model.loaded`](#class-currentmodelloaded)
+  - [Property: `current.model.loaded`](#property-currentmodelloaded)
     - [Attributes](#attributes-2)
     - [Examples](#examples-3)
   - [Function: `load_model`](#function-load_model)
@@ -127,7 +127,7 @@ Loaded repos can be accessed via `current.huggingface_hub.loaded`. If load is se
         # path_to_model will be /my-directory
 ```
 
-## Class: `current.huggingface_hub`
+## Property: `current.huggingface_hub`
 
 This object provides syntactic sugar over [huggingface_hub](https://github.com/huggingface/huggingface_hub)'s [snapshot_download](https://huggingface.co/docs/huggingface_hub/main/en/package_reference/file_download#huggingface_hub.snapshot_download) function.
 
@@ -151,7 +151,7 @@ It passes down all the parameters to the `huggingface_hub.snapshot_download` fun
 
 - **** (*dict*): A reference to the artifact that was saved/retrieved from the Metaflow's datastore.
 
-### Class: `current.huggingface_hub.loaded`
+### Property: `current.huggingface_hub.loaded`
 
 ```python
 current.huggingface_hub.loaded(checkpointer: 'HuggingfaceRegistry', logger, temp_dir_root=None) -> None
@@ -295,7 +295,7 @@ Load a model/checkpoint from the datastore to a temporary directory or a specifi
 
 - **str** (*The path to the temporary directory where the model is loaded.*): 
 
-## Class: `current.model.loaded`
+## Property: `current.model.loaded`
 
 This property helps manage all the models loaded via `@model(load=...)` decorator and `current.model.load` method.
 
