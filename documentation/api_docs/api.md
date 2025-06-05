@@ -155,7 +155,13 @@ Manages loaded HuggingFace models/datasets and provides access to their local pa
 
 #### Attributes
 
-- **info**: 
+- **info**: Returns metadata information about all loaded models from Hugging Face Hub.
+
+This property provides access to the metadata of models that have been loaded
+via the `@huggingface_hub(load=...)` decorator. The metadata includes information
+such as model repository details, storage location, and any cached information
+from the datastore. Returns a dictionary where keys are model repository IDs and values are metadata
+dictionaries containing information about each loaded model.
 
 #### Examples
 
