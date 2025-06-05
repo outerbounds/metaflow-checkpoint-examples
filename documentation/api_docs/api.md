@@ -21,20 +21,24 @@
   - [Class: `current.model.loaded`](#class-currentmodelloaded)
     - [Attributes](#attributes-1)
     - [Examples](#examples-2)
+  - [Function: `load_model`](#function-load_model)
+    - [Parameters](#parameters-3)
+    - [Raises](#raises-1)
+    - [Examples](#examples-3)
 - [Decorator: `@checkpoint`](#decorator-checkpoint)
-  - [Parameters](#parameters-3)
-  - [Examples](#examples-3)
+  - [Parameters](#parameters-4)
+  - [Examples](#examples-4)
   - [Property: `current.checkpoint.directory`](#property-currentcheckpointdirectory)
 - [Class: `Checkpoint`](#class-checkpoint)
   - [Attributes](#attributes-2)
   - [Method: `Checkpoint.save`](#method-checkpointsave)
-    - [Parameters](#parameters-4)
-  - [Method: `Checkpoint.load`](#method-checkpointload)
     - [Parameters](#parameters-5)
-  - [Method: `Checkpoint.list`](#method-checkpointlist)
+  - [Method: `Checkpoint.load`](#method-checkpointload)
     - [Parameters](#parameters-6)
+  - [Method: `Checkpoint.list`](#method-checkpointlist)
+    - [Parameters](#parameters-7)
     - [Returns](#returns-3)
-    - [Examples](#examples-4)
+    - [Examples](#examples-5)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -264,6 +268,96 @@ It is a dictionary like object that stores the loaded models in a temporary dire
         import os
         os.listdir(current.model.loaded["model_key"])
         os.listdir(current.model.loaded["chckpt_key"])
+```
+
+## Function: `load_model`
+
+```python
+load_model(reference: Union[str, metaflow_extensions.obcheckpoint.plugins.machine_learning_utilities.datastructures.MetaflowDataArtifactReference, dict], path: str)
+```
+
+**Module:** `metaflow`
+
+Load a model or checkpoint from Metaflow's datastore to a local path.
+
+This function provides a convenient way to load models and checkpoints that were
+
+previously saved using `@model`, `@checkpoint`, or `@huggingface_hub` decorators,
+
+either from within a Metaflow task or externally using the Run API.
+
+### Parameters
+
+- **reference** (*Union[str, MetaflowDataArtifactReference, dict]*): The reference to the model/checkpoint to load. This can be A string key (e.g., "model/my_model_abc123") OR A MetaflowDataArtifactReference object OR a dictionary artifact reference (e.g., self.my_model from a previous step)
+- **path** (*str*): The local filesystem path where the model/checkpoint should be loaded. The directory will be created if it doesn't exist.
+
+### Raises
+
+- **** (*ValueError*): If reference or path is None
+- **** (*KeyNotCompatibleException*): If the reference key is not compatible with supported artifact types
+
+### Examples
+
+**Loading within a Metaflow task:**
+
+```python
+from metaflow import FlowSpec, step
+
+class MyFlow(FlowSpec):
+    @model
+    @step
+    def train(self):
+        # Save a model
+        self.my_model = current.model.save(
+            "/path/to/trained/model",
+            label="trained_model"
+        )
+        self.next(self.evaluate)
+
+    @step
+    def evaluate(self):
+        from metaflow import load_model
+        # Load the model using the artifact reference
+        load_model(self.my_model, "/tmp/loaded_model")
+        # Model is now available at /tmp/loaded_model
+        self.next(self.end)
+```
+
+**Loading externally using Metaflow's Run API:**
+
+```python
+from metaflow import Run
+from metaflow import load_model
+
+# Get a reference to a completed run
+run = Run("MyFlow/123")
+
+# Load using artifact reference from a step
+task_model_ref = run["train"].task.data.my_model
+load_model(task_model_ref, "/local/path/to/model")
+
+model_ref = run.data.my_model
+load_model(model_ref, "/local/path/to/model")
+```
+
+**Loading HuggingFace models:**
+
+```python
+# If you saved a HuggingFace model reference
+@huggingface_hub
+@step
+def download_hf_model(self):
+    self.hf_model = current.huggingface_hub.snapshot_download(
+        repo_id="mistralai/Mistral-7B-Instruct-v0.1"
+    )
+    self.next(self.use_model)
+
+@step
+def use_model(self):
+    from metaflow import load_model
+    # Load the HuggingFace model
+    load_model(self.hf_model, "/tmp/mistral_model")
+    # Model files are now available at /tmp/mistral_model
 ```
 
 # Decorator: `@checkpoint`
