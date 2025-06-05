@@ -9,9 +9,12 @@
     - [Attributes](#attributes)
     - [Method: `current.huggingface_hub.snapshot_download`](#method-currenthuggingface_hubsnapshot_download)
       - [Returns](#returns)
+    - [Class: `current.huggingface_hub.loaded`](#class-currenthuggingface_hubloaded)
+      - [Attributes](#attributes-1)
+      - [Examples](#examples-1)
 - [Decorator: `@model`](#decorator-model)
   - [Parameters](#parameters-1)
-  - [Examples](#examples-1)
+  - [Examples](#examples-2)
   - [Method: `current.model.save`](#method-currentmodelsave)
     - [Parameters](#parameters-2)
     - [Returns](#returns-1)
@@ -19,18 +22,18 @@
   - [Method: `current.model.load`](#method-currentmodelload)
     - [Returns](#returns-2)
   - [Class: `current.model.loaded`](#class-currentmodelloaded)
-    - [Attributes](#attributes-1)
-    - [Examples](#examples-2)
+    - [Attributes](#attributes-2)
+    - [Examples](#examples-3)
   - [Function: `load_model`](#function-load_model)
     - [Parameters](#parameters-3)
     - [Raises](#raises-1)
-    - [Examples](#examples-3)
+    - [Examples](#examples-4)
 - [Decorator: `@checkpoint`](#decorator-checkpoint)
   - [Parameters](#parameters-4)
-  - [Examples](#examples-4)
+  - [Examples](#examples-5)
   - [Property: `current.checkpoint.directory`](#property-currentcheckpointdirectory)
 - [Class: `Checkpoint`](#class-checkpoint)
-  - [Attributes](#attributes-2)
+  - [Attributes](#attributes-3)
   - [Method: `Checkpoint.save`](#method-checkpointsave)
     - [Parameters](#parameters-5)
   - [Method: `Checkpoint.load`](#method-checkpointload)
@@ -38,7 +41,7 @@
   - [Method: `Checkpoint.list`](#method-checkpointlist)
     - [Parameters](#parameters-7)
     - [Returns](#returns-3)
-    - [Examples](#examples-5)
+    - [Examples](#examples-6)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -132,7 +135,7 @@ The `current.huggingface_hub.snapshot_download` function downloads objects from 
 
 ### Attributes
 
-- **loaded**: 
+- **loaded**: This property provides a dictionary-like interface to access the local paths of the huggingface repos specified in the `load` argument of the `@huggingface_hub` decorator.
 
 ### Method: `current.huggingface_hub.snapshot_download`
 
@@ -147,6 +150,49 @@ It passes down all the parameters to the `huggingface_hub.snapshot_download` fun
 #### Returns
 
 - **** (*dict*): A reference to the artifact that was saved/retrieved from the Metaflow's datastore.
+
+### Class: `current.huggingface_hub.loaded`
+
+```python
+current.huggingface_hub.loaded(checkpointer: 'HuggingfaceRegistry', logger, temp_dir_root=None) -> None
+```
+
+Manages loaded HuggingFace models/datasets and provides access to their local paths.
+
+`current.huggingface_hub.loaded` provides a dictionary-like interface to access the local paths of the huggingface repos specified in the `load` argument of the `@huggingface_hub` decorator.
+
+#### Attributes
+
+- **info**: 
+
+#### Examples
+
+```python
+# Basic loading and access
+@huggingface_hub(load=["mistralai/Mistral-7B-Instruct-v0.1"])
+@step
+def my_step(self):
+    # Access the local path of a loaded model
+    model_path = current.huggingface_hub.loaded["mistralai/Mistral-7B-Instruct-v0.1"]
+
+    # Check if a model is loaded
+    if "mistralai/Mistral-7B-Instruct-v0.1" in current.huggingface_hub.loaded:
+        print("Model is loaded!")
+
+# Custom path and advanced loading
+@huggingface_hub(load=[
+    ("mistralai/Mistral-7B-Instruct-v0.1", "/custom/path"),  # Specify custom path
+    {
+        "repo_id": "org/model-name",
+        "force_download": True,  # Force fresh download
+        "repo_type": "dataset"   # Load dataset instead of model
+    }
+])
+@step
+def another_step(self):
+    # Models are available at specified paths
+    pass
+```
 
 # Decorator: `@model`
 
@@ -280,11 +326,7 @@ load_model(reference: Union[str, metaflow_extensions.obcheckpoint.plugins.machin
 
 Load a model or checkpoint from Metaflow's datastore to a local path.
 
-This function provides a convenient way to load models and checkpoints that were
-
-previously saved using `@model`, `@checkpoint`, or `@huggingface_hub` decorators,
-
-either from within a Metaflow task or externally using the Run API.
+This function provides a convenient way to load models and checkpoints that were previously saved using `@model`, `@checkpoint`, or `@huggingface_hub` decorators, either from within a Metaflow task or externally using the Run API.
 
 ### Parameters
 
