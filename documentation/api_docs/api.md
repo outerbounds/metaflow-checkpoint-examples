@@ -3,33 +3,38 @@
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [@huggingface_hub](#huggingface_hub)
-    - [Decorator: `@huggingface_hub`](#decorator-huggingface_hub)
-      - [Parameters](#parameters)
-    - [Class: `current.huggingface_hub`](#class-currenthuggingface_hub)
-      - [Attributes](#attributes)
-      - [Method: `current.huggingface_hub.snapshot_download`](#method-currenthuggingface_hubsnapshot_download)
-        - [Returns](#returns)
+  - [Decorator: `@huggingface_hub`](#decorator-huggingface_hub)
+    - [Parameters](#parameters)
+    - [Examples](#examples)
+  - [Class: `current.huggingface_hub`](#class-currenthuggingface_hub)
+    - [Attributes](#attributes)
+    - [Method: `current.huggingface_hub.snapshot_download`](#method-currenthuggingface_hubsnapshot_download)
+      - [Returns](#returns)
 - [@model](#model)
-    - [Decorator: `@model`](#decorator-model)
-      - [Parameters](#parameters-1)
-      - [Method: `current.model.save`](#method-currentmodelsave)
-      - [Method: `current.model.load`](#method-currentmodelload)
-        - [Returns](#returns-1)
-    - [Class: `current.model.loaded`](#class-currentmodelloaded)
-      - [Attributes](#attributes-1)
+- [Decorator: `@model`](#decorator-model)
+  - [Parameters](#parameters-1)
+  - [Examples](#examples-1)
+  - [Method: `current.model.save`](#method-currentmodelsave)
+  - [Method: `current.model.load`](#method-currentmodelload)
+    - [Returns](#returns-1)
+  - [Class: `current.model.loaded`](#class-currentmodelloaded)
+    - [Attributes](#attributes-1)
+    - [Examples](#examples-2)
 - [@checkpoint](#checkpoint)
-    - [Decorator: `@checkpoint`](#decorator-checkpoint)
-      - [Parameters](#parameters-2)
-      - [Property: `current.checkpoint.directory`](#property-currentcheckpointdirectory)
-    - [Class: `Checkpoint`](#class-checkpoint)
-      - [Attributes](#attributes-2)
-      - [Method: `Checkpoint.save`](#method-checkpointsave)
-        - [Parameters](#parameters-3)
-      - [Method: `Checkpoint.load`](#method-checkpointload)
-        - [Parameters](#parameters-4)
-      - [Method: `Checkpoint.list`](#method-checkpointlist)
-        - [Parameters](#parameters-5)
-        - [Returns](#returns-2)
+- [Decorator: `@checkpoint`](#decorator-checkpoint)
+  - [Parameters](#parameters-2)
+  - [Examples](#examples-3)
+  - [Property: `current.checkpoint.directory`](#property-currentcheckpointdirectory)
+- [Class: `Checkpoint`](#class-checkpoint)
+  - [Attributes](#attributes-2)
+  - [Method: `Checkpoint.save`](#method-checkpointsave)
+    - [Parameters](#parameters-3)
+  - [Method: `Checkpoint.load`](#method-checkpointload)
+    - [Parameters](#parameters-4)
+  - [Method: `Checkpoint.list`](#method-checkpointlist)
+    - [Parameters](#parameters-5)
+    - [Returns](#returns-2)
+    - [Examples](#examples-4)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -37,7 +42,7 @@
 
 # @huggingface_hub
 
-### Decorator: `@huggingface_hub`
+## Decorator: `@huggingface_hub`
 
 ```python
 @huggingface_hub(...)
@@ -47,7 +52,7 @@
 
 Decorator that helps cache, version and store models/datasets from huggingface hub.
 
-#### Parameters
+### Parameters
 
 - **temp_dir_root** (*str, optional*): The root directory that will hold the temporary directory where objects will be downloaded.
 - **load: Union[List[str], List[Tuple[Dict, str]], List[Tuple[str, str]], List[Dict], None]**: The list of repos (models/datasets) to load.
@@ -62,7 +67,62 @@ Loaded repos can be accessed via `current.huggingface_hub.loaded`. If load is se
 - If repo is found in the datastore:
     - Loads it directly from datastore to local path (can be temporary directory or specified path)
 
-### Class: `current.huggingface_hub`
+### Examples
+
+**Usage: creating references of models from huggingface that may be loaded in downstream steps**
+```python
+    @huggingface_hub
+    @step
+    def pull_model_from_huggingface(self):
+        # `current.huggingface_hub.snapshot_download` downloads the model from the Hugging Face Hub
+        # and saves it in the backend storage based on the model's `repo_id`. If there exists a model
+        # with the same `repo_id` in the backend storage, it will not download the model again. The return
+        # value of the function is a reference to the model in the backend storage.
+        # This reference can be used to load the model in the subsequent steps via `@model(load=["llama_model"])`
+
+        self.model_id = "mistralai/Mistral-7B-Instruct-v0.1"
+        self.llama_model = current.huggingface_hub.snapshot_download(
+            repo_id=self.model_id,
+            allow_patterns=["*.safetensors", "*.json", "tokenizer.*"],
+        )
+        self.next(self.train)
+```
+
+**Usage: loading models directly from huggingface hub or from cache (from metaflow's datastore)**
+```python
+    @huggingface_hub(load=["mistralai/Mistral-7B-Instruct-v0.1"])
+    @step
+    def pull_model_from_huggingface(self):
+        path_to_model = current.huggingface_hub.loaded["mistralai/Mistral-7B-Instruct-v0.1"]
+```
+
+```python
+    @huggingface_hub(load=[("mistralai/Mistral-7B-Instruct-v0.1", "/my-directory"), ("myorg/mistral-lora, "/my-lora-directory")])
+    @step
+    def finetune_model(self):
+        path_to_model = current.huggingface_hub.loaded["mistralai/Mistral-7B-Instruct-v0.1"]
+        # path_to_model will be /my-directory
+```
+
+```python
+    # Takes all the arguments passed to `snapshot_download`
+    # except for `local_dir`
+    @huggingface_hub(load=[
+        {
+            "repo_id": "mistralai/Mistral-7B-Instruct-v0.1",
+        },
+        {
+            "repo_id": "myorg/mistral-lora",
+            "repo_type": "model",
+        },
+    ])
+    @step
+    def finetune_model(self):
+        path_to_model = current.huggingface_hub.loaded["mistralai/Mistral-7B-Instruct-v0.1"]
+        # path_to_model will be /my-directory
+```
+
+## Class: `current.huggingface_hub`
 
 This object provides syntactic sugar
 
@@ -74,11 +134,11 @@ The `current.huggingface_hub.snapshot_download` function downloads objects from 
 
 `<repo_type>/<repo_id>` name. The `repo_type` is by default `model` and can be overriden by passing the `repo_type` parameter to the `snapshot_download` function.
 
-#### Attributes
+### Attributes
 
 - **loaded**: 
 
-#### Method: `current.huggingface_hub.snapshot_download`
+### Method: `current.huggingface_hub.snapshot_download`
 
 ```python
 current.huggingface_hub.snapshot_download(self, **kwargs) -> dict
@@ -88,13 +148,13 @@ Downloads a model from huggingface hub and cache's it to the Metaflow's datastor
 
 It passes down all the parameters to the `huggingface_hub.snapshot_download` function.
 
-##### Returns
+#### Returns
 
 - **** (*dict*): A reference to the artifact that was saved/retrieved from the Metaflow's datastore.
 
 # @model
 
-### Decorator: `@model`
+# Decorator: `@model`
 
 ```python
 @model(...)
@@ -104,7 +164,7 @@ It passes down all the parameters to the `huggingface_hub.snapshot_download` fun
 
 Enables loading / saving of models within a step.
 
-#### Parameters
+## Parameters
 
 - **load** (*Union[List[str],str,List[Tuple[str,Union[str,None]]]], default: None*): Artifact name/s referencing the models/checkpoints to load. Artifact names refer to the names of the instance variables set to `self`.
 These artifact names give to `load` be reference objects or reference `key` string's from objects created by:
@@ -117,13 +177,55 @@ the local filesystem. If the second element is None, the artifact will be unpack
 If a string is provided, then the artifact corresponding to that name will be loaded in the current working directory.
 - **temp_dir_root** (*str, default: None*): The root directory under which `current.model.loaded` will store loaded models
 
-#### Method: `current.model.save`
+## Examples
+
+- Saving Models 
+```python
+@model
+@step
+def train(self):
+    # current.model.save returns a dictionary reference to the model saved
+    self.my_model = current.model.save(
+        path_to_my_model,
+        label="my_model",
+        metadata={
+            "epochs": 10,
+            "batch-size": 32,
+            "learning-rate": 0.001,
+        }
+    )
+    self.next(self.test)
+
+@model(load="my_model")
+@step
+def test(self):
+    # `current.model.loaded` returns a dictionary of the loaded models
+    # where the key is the name of the artifact and the value is the path to the model
+    print(os.listdir(current.model.loaded["my_model"]))
+    self.next(self.end)
+```
+
+- Loading models
+```python
+@step
+def train(self):
+    # current.model.load returns the path to the model loaded
+    checkpoint_path = current.model.load(
+        self.checkpoint_key,
+    )
+    model_path = current.model.load(
+        self.model,
+    )
+    self.next(self.test)
+```
+
+## Method: `current.model.save`
 
 ```python
 current.model.save(self, path, label=None, metadata=None, storage_format='tar')
 ```
 
-#### Method: `current.model.load`
+## Method: `current.model.load`
 
 ```python
 current.model.load(self, reference: Union[str, metaflow_extensions.obcheckpoint.plugins.machine_learning_utilities.datastructures.MetaflowDataArtifactReference, dict], path: Optional[str] = None)
@@ -131,11 +233,11 @@ current.model.load(self, reference: Union[str, metaflow_extensions.obcheckpoint.
 
 Load a model/checkpoint from the datastore to a temporary directory or a specified path.
 
-##### Returns
+### Returns
 
 - **str** (*The path to the temporary directory where the model is loaded.*): 
 
-### Class: `current.model.loaded`
+## Class: `current.model.loaded`
 
 This property helps manage all the models loaded via `@model(load=...)` decorator and
 
@@ -147,13 +249,24 @@ The keys of the dictionary are the artifact names and the values are the paths t
 
 temporary directories where the models are stored.
 
-#### Attributes
+### Attributes
 
 - **info**: 
 
+### Examples
+
+```python
+    @model(load=["model_key", "chckpt_key"])
+    @step
+    def mid_step(self):
+        import os
+        os.listdir(current.model.loaded["model_key"])
+        os.listdir(current.model.loaded["chckpt_key"])
+```
+
 # @checkpoint
 
-### Decorator: `@checkpoint`
+# Decorator: `@checkpoint`
 
 ```python
 @checkpoint(...)
@@ -163,7 +276,7 @@ temporary directories where the models are stored.
 
 Enables checkpointing for a step.
 
-#### Parameters
+## Parameters
 
 - **load_policy** (*str, default: "fresh"*): The policy for loading the checkpoint. The following policies are supported:
     - "eager": Loads the the latest available checkpoint within the namespace.
@@ -176,11 +289,57 @@ Enables checkpointing for a step.
     created within the task will be loaded when the task is retries execution on failure.
 - **temp_dir_root** (*str, default: None*): The root directory under which `current.checkpoint.directory` will be created.
 
-#### Property: `current.checkpoint.directory`
+## Examples
+
+- Saving Checkpoints
+
+```python
+@checkpoint
+@step
+def train(self):
+    model = create_model(self.parameters, checkpoint_path = None)
+    for i in range(self.epochs):
+        # some training logic
+        loss = model.train(self.dataset)
+        if i % 10 == 0:
+            model.save(
+                current.checkpoint.directory,
+            )
+            # saves the contents of the `current.checkpoint.directory` as a checkpoint
+            # and returns a reference dictionary to the checkpoint saved in the datastore
+            self.latest_checkpoint = current.checkpoint.save(
+                name="epoch_checkpoint",
+                metadata={
+                    "epoch": i,
+                    "loss": loss,
+                }
+            )
+```
+
+- Using Loaded Checkpoints
+
+```python
+@retry(times=3)
+@checkpoint
+@step
+def train(self):
+    # Assume that the task has restarted and the previous attempt of the task
+    # saved a checkpoint
+    checkpoint_path = None
+    if current.checkpoint.is_loaded: # Check if a checkpoint is loaded
+        print("Loaded checkpoint from the previous attempt")
+        checkpoint_path = current.checkpoint.directory
+
+    model = create_model(self.parameters, checkpoint_path = checkpoint_path)
+    for i in range(self.epochs):
+        ...
+```
+
+## Property: `current.checkpoint.directory`
 
 The directory where a checkpoint is loaded
 
-### Class: `Checkpoint`
+# Class: `Checkpoint`
 
 ```python
 Checkpoint(temp_dir_root=None, init_dir=False)
@@ -188,11 +347,11 @@ Checkpoint(temp_dir_root=None, init_dir=False)
 
 **Module:** `metaflow`
 
-#### Attributes
+## Attributes
 
 - **directory**: The directory where a checkpoint is loaded
 
-#### Method: `Checkpoint.save`
+## Method: `Checkpoint.save`
 
 ```python
 Checkpoint.save(self, path=None, metadata=None, latest=True, name='mfchckpt', storage_format='files') -> Dict
@@ -200,7 +359,7 @@ Checkpoint.save(self, path=None, metadata=None, latest=True, name='mfchckpt', st
 
 Saves the checkpoint to the datastore
 
-##### Parameters
+### Parameters
 
 - **path** (*Optional[Union[str, os.PathLike]], default: None*): The path to save the checkpoint. Accepts a file path or a directory path.
     - If a directory path is provided, all the contents within that directory will be saved.
@@ -217,7 +376,7 @@ This helps determine if the checkpoint gets loaded when the task restarts.
 - **storage_format** (*str, default: files*): If `tar`, the contents of the directory will be tarred before saving to the datastore.
 If `files`, saves directory directly to the datastore.
 
-#### Method: `Checkpoint.load`
+## Method: `Checkpoint.load`
 
 ```python
 Checkpoint.load(self, reference: Union[str, Dict, metaflow_extensions.obcheckpoint.plugins.machine_learning_utilities.datastructures.CheckpointArtifact], path: Optional[str] = None)
@@ -225,14 +384,14 @@ Checkpoint.load(self, reference: Union[str, Dict, metaflow_extensions.obcheckpoi
 
 loads a checkpoint reference from the datastore. (resembles a read op)
 
-##### Parameters
+### Parameters
 
 - **`reference`**: - can be a string, dict or a CheckpointArtifact object:
     - string: a string reference to the checkpoint (checkpoint key)
     - dict: a dictionary reference to the checkpoint
     - CheckpointArtifact: a CheckpointArtifact object reference to the checkpoint
 
-#### Method: `Checkpoint.list`
+## Method: `Checkpoint.list`
 
 ```python
 Checkpoint.list(self, name: Optional[str] = None, task: Union[ForwardRef('metaflow.Task'), str, NoneType] = None, attempt: Union[int, str, NoneType] = None, full_namespace: bool = False, as_dict: bool = True) -> List[Union[Dict, metaflow_extensions.obcheckpoint.plugins.machine_learning_utilities.datastructures.CheckpointArtifact]]
@@ -240,27 +399,13 @@ Checkpoint.list(self, name: Optional[str] = None, task: Union[ForwardRef('metafl
 
 lists the checkpoints in the current task or the specified task.
 
-When users call `list` without any arguments, it will list all the checkpoints in the currently executing
-
-task (this includes all attempts). If the `list` method is called without any arguments outside a Metaflow Task execution context,
-
-it will raise an exception. Users can also call `list` with `attempt` argument to list all checkpoints within a
-
-the specific attempt of the currently executing task.
+When users call `list` without any arguments, it will list all the checkpoints in the currently executing task (this includes all attempts). If the `list` method is called without any arguments outside a Metaflow Task execution context, it will raise an exception. Users can also call `list` with `attempt` argument to list all checkpoints within a the specific attempt of the currently executing task.
 
 
 
-When a `task` argument is provided, the `list` method will return all the checkpoints
+When a `task` argument is provided, the `list` method will return all the checkpoints for a task's latest attempt unless a specific attempt number is set in the `attempt` argument. If the `Task` object contains a `DataArtifact` with all the previous checkpoints, then the `list` method will return all the checkpoints from the data artifact. If for some reason the DataArtifact is not written, then the `list` method will return all checkpoints directly from the checkpoint's datastore.
 
-for a task's latest attempt unless a specific attempt number is set in the `attempt` argument.
-
-If the `Task` object contains a `DataArtifact` with all the previous checkpoints, then the `list` method will return
-
-all the checkpoints from the data artifact. If for some reason the DataArtifact is not written, then the `list` method will
-
-return all checkpoints directly from the checkpoint's datastore.
-
-##### Parameters
+### Parameters
 
 - **name** (*Optional[str], default: None*): Filter checkpoints by name.
 - **task** (*Optional[Union["metaflow.Task", str]], default: None*): The task to list checkpoints from. Can be either a `Task` object or a task pathspec string.
@@ -272,6 +417,16 @@ If `task` is not None and `attempt` is None, then it will load the task's latest
 Only allowed during a Metaflow Task execution context.
 Raises an exception if `full_namespace` is set to True when called outside a Metaflow Task execution context.
 
-##### Returns
+### Returns
 
 - **** (*List[Dict]*): 
+
+### Examples
+
+```python
+
+Checkpoint().list(name="best") # lists checkpoints in the current task with the name "best"
+Checkpoint().list(task="anotherflow/somerunid/somestep/sometask", name="best") # Identical as the above one but
+Checkpoint().list() # lists **all** the checkpoints in the current task (including the ones from all attempts)
+
+```
