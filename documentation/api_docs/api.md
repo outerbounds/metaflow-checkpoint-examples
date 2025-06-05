@@ -6,40 +6,30 @@
     - [Decorator: `@huggingface_hub`](#decorator-huggingface_hub)
       - [Parameters](#parameters)
     - [Class: `current.huggingface_hub`](#class-currenthuggingface_hub)
-      - [Parameters](#parameters-1)
       - [Attributes](#attributes)
       - [Method: `current.huggingface_hub.snapshot_download`](#method-currenthuggingface_hubsnapshot_download)
-        - [Parameters](#parameters-2)
         - [Returns](#returns)
 - [@model](#model)
     - [Decorator: `@model`](#decorator-model)
-      - [Parameters](#parameters-3)
+      - [Parameters](#parameters-1)
       - [Method: `current.model.save`](#method-currentmodelsave)
-        - [Parameters](#parameters-4)
       - [Method: `current.model.load`](#method-currentmodelload)
-        - [Parameters](#parameters-5)
         - [Returns](#returns-1)
     - [Class: `current.model.loaded`](#class-currentmodelloaded)
-      - [Parameters](#parameters-6)
       - [Attributes](#attributes-1)
 - [@checkpoint](#checkpoint)
     - [Decorator: `@checkpoint`](#decorator-checkpoint)
-      - [Parameters](#parameters-7)
-    - [Class: `Checkpoint`](#class-checkpoint)
-      - [Parameters](#parameters-8)
-      - [Attributes](#attributes-2)
-  - [Returns](#returns-2)
-      - [Method: `Checkpoint.save`](#method-checkpointsave)
-        - [Parameters](#parameters-9)
-        - [Parameters](#parameters-10)
-      - [Method: `Checkpoint.load`](#method-checkpointload)
-        - [Parameters](#parameters-11)
-        - [Parameters](#parameters-12)
-      - [Method: `Checkpoint.list`](#method-checkpointlist)
-        - [Parameters](#parameters-13)
-        - [Parameters](#parameters-14)
-        - [Returns](#returns-3)
+      - [Parameters](#parameters-2)
       - [Property: `current.checkpoint.directory`](#property-currentcheckpointdirectory)
+    - [Class: `Checkpoint`](#class-checkpoint)
+      - [Attributes](#attributes-2)
+      - [Method: `Checkpoint.save`](#method-checkpointsave)
+        - [Parameters](#parameters-3)
+      - [Method: `Checkpoint.load`](#method-checkpointload)
+        - [Parameters](#parameters-4)
+      - [Method: `Checkpoint.list`](#method-checkpointlist)
+        - [Parameters](#parameters-5)
+        - [Returns](#returns-2)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -74,10 +64,6 @@ Loaded repos can be accessed via `current.huggingface_hub.loaded`. If load is se
 
 ### Class: `current.huggingface_hub`
 
-#### Parameters
-
-``
-
 This object provides syntactic sugar
 
 over [huggingface_hub](https://github.com/huggingface/huggingface_hub)'s
@@ -97,10 +83,6 @@ The `current.huggingface_hub.snapshot_download` function downloads objects from 
 ```python
 current.huggingface_hub.snapshot_download(self, **kwargs) -> dict
 ```
-
-##### Parameters
-
-`self`, `**kwargs`
 
 Downloads a model from huggingface hub and cache's it to the Metaflow's datastore.
 
@@ -141,19 +123,11 @@ If a string is provided, then the artifact corresponding to that name will be lo
 current.model.save(self, path, label=None, metadata=None, storage_format='tar')
 ```
 
-##### Parameters
-
-`self`, `path`, `label` = `None`, `metadata` = `None`, `storage_format` = `tar`
-
 #### Method: `current.model.load`
 
 ```python
 current.model.load(self, reference: Union[str, metaflow_extensions.obcheckpoint.plugins.machine_learning_utilities.datastructures.MetaflowDataArtifactReference, dict], path: Optional[str] = None)
 ```
-
-##### Parameters
-
-`self`, `reference` (*Union*), `path` (*Optional*) = `None`
 
 Load a model/checkpoint from the datastore to a temporary directory or a specified path.
 
@@ -162,10 +136,6 @@ Load a model/checkpoint from the datastore to a temporary directory or a specifi
 - **str** (*The path to the temporary directory where the model is loaded.*): 
 
 ### Class: `current.model.loaded`
-
-#### Parameters
-
-``
 
 This property helps manage all the models loaded via `@model(load=...)` decorator and
 
@@ -206,6 +176,10 @@ Enables checkpointing for a step.
     created within the task will be loaded when the task is retries execution on failure.
 - **temp_dir_root** (*str, default: None*): The root directory under which `current.checkpoint.directory` will be created.
 
+#### Property: `current.checkpoint.directory`
+
+The directory where a checkpoint is loaded
+
 ### Class: `Checkpoint`
 
 ```python
@@ -214,29 +188,15 @@ Checkpoint(temp_dir_root=None, init_dir=False)
 
 **Module:** `metaflow`
 
-#### Parameters
-
-`temp_dir_root` = `None`, `init_dir` = `False`
-
 #### Attributes
 
 - **directory**: The directory where a checkpoint is loaded
-
-Returns
--------
-Optional[str]
-    The directory where a checkpoint is loaded.
-    If the checkpoint is not loaded, returns None.
 
 #### Method: `Checkpoint.save`
 
 ```python
 Checkpoint.save(self, path=None, metadata=None, latest=True, name='mfchckpt', storage_format='files') -> Dict
 ```
-
-##### Parameters
-
-`self`, `path` = `None`, `metadata` = `None`, `latest` = `True`, `name` = `mfchckpt`, `storage_format` = `files`
 
 Saves the checkpoint to the datastore
 
@@ -263,10 +223,6 @@ If `files`, saves directory directly to the datastore.
 Checkpoint.load(self, reference: Union[str, Dict, metaflow_extensions.obcheckpoint.plugins.machine_learning_utilities.datastructures.CheckpointArtifact], path: Optional[str] = None)
 ```
 
-##### Parameters
-
-`self`, `reference` (*Union*), `path` (*Optional*) = `None`
-
 loads a checkpoint reference from the datastore. (resembles a read op)
 
 ##### Parameters
@@ -281,10 +237,6 @@ loads a checkpoint reference from the datastore. (resembles a read op)
 ```python
 Checkpoint.list(self, name: Optional[str] = None, task: Union[ForwardRef('metaflow.Task'), str, NoneType] = None, attempt: Union[int, str, NoneType] = None, full_namespace: bool = False, as_dict: bool = True) -> List[Union[Dict, metaflow_extensions.obcheckpoint.plugins.machine_learning_utilities.datastructures.CheckpointArtifact]]
 ```
-
-##### Parameters
-
-`self`, `name` (*Optional*) = `None`, `task` (*Union*) = `None`, `attempt` (*Union*) = `None`, `full_namespace` (*bool*) = `False`, `as_dict` (*bool*) = `True`
 
 lists the checkpoints in the current task or the specified task.
 
@@ -323,8 +275,3 @@ Raises an exception if `full_namespace` is set to True when called outside a Met
 ##### Returns
 
 - **** (*List[Dict]*): 
-
-#### Property: `current.checkpoint.directory`
-
-The directory where a checkpoint is loaded
-
