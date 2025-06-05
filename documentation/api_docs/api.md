@@ -13,24 +13,27 @@
   - [Parameters](#parameters-1)
   - [Examples](#examples-1)
   - [Method: `current.model.save`](#method-currentmodelsave)
-  - [Method: `current.model.load`](#method-currentmodelload)
+    - [Parameters](#parameters-2)
     - [Returns](#returns-1)
+    - [Raises](#raises)
+  - [Method: `current.model.load`](#method-currentmodelload)
+    - [Returns](#returns-2)
   - [Class: `current.model.loaded`](#class-currentmodelloaded)
     - [Attributes](#attributes-1)
     - [Examples](#examples-2)
 - [Decorator: `@checkpoint`](#decorator-checkpoint)
-  - [Parameters](#parameters-2)
+  - [Parameters](#parameters-3)
   - [Examples](#examples-3)
   - [Property: `current.checkpoint.directory`](#property-currentcheckpointdirectory)
 - [Class: `Checkpoint`](#class-checkpoint)
   - [Attributes](#attributes-2)
   - [Method: `Checkpoint.save`](#method-checkpointsave)
-    - [Parameters](#parameters-3)
-  - [Method: `Checkpoint.load`](#method-checkpointload)
     - [Parameters](#parameters-4)
-  - [Method: `Checkpoint.list`](#method-checkpointlist)
+  - [Method: `Checkpoint.load`](#method-checkpointload)
     - [Parameters](#parameters-5)
-    - [Returns](#returns-2)
+  - [Method: `Checkpoint.list`](#method-checkpointlist)
+    - [Parameters](#parameters-6)
+    - [Returns](#returns-3)
     - [Examples](#examples-4)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -160,10 +163,7 @@ Enables loading / saving of models within a step.
 ## Parameters
 
 - **load** (*Union[List[str],str,List[Tuple[str,Union[str,None]]]], default: None*): Artifact name/s referencing the models/checkpoints to load. Artifact names refer to the names of the instance variables set to `self`.
-These artifact names give to `load` be reference objects or reference `key` string's from objects created by:
-- `current.checkpoint`
-- `current.model`
-- `current.huggingface_hub`
+These artifact names give to `load` be reference objects or reference `key` string's from objects created by `current.checkpoint` / `current.model` / `current.huggingface_hub`.
 
 If a list of tuples is provided, the first element is the artifact name and the second element is the path the artifact needs be unpacked on
 the local filesystem. If the second element is None, the artifact will be unpacked in the current working directory.
@@ -218,6 +218,28 @@ def train(self):
 current.model.save(self, path, label=None, metadata=None, storage_format='tar')
 ```
 
+Save a model to the datastore.
+
+### Parameters
+
+- **path** (*str or os.PathLike*): The path to the model file or directory to save. If a directory path is provided,
+all contents within that directory will be saved. If a file path is provided,
+the file will be directly saved to the datastore.
+- **label** (*str, optional*): A label to identify the saved model. If not provided, a default label based on
+the flow and step name will be used.
+- **metadata** (*dict, optional*): Additional metadata to store with the model. Default is None.
+- **storage_format** (*str, optional*): The storage format for the model. Must be one of STORAGE_FORMATS.TAR or
+STORAGE_FORMATS.FILES. Default is STORAGE_FORMATS.TAR.
+
+### Returns
+
+- **** (*dict*): A dictionary representation of the saved model artifact containing metadata
+and reference information.
+
+### Raises
+
+- **** (*ValueError*): If an unsupported storage format is provided.
+
 ## Method: `current.model.load`
 
 ```python
@@ -232,15 +254,9 @@ Load a model/checkpoint from the datastore to a temporary directory or a specifi
 
 ## Class: `current.model.loaded`
 
-This property helps manage all the models loaded via `@model(load=...)` decorator and
+This property helps manage all the models loaded via `@model(load=...)` decorator and `current.model.load` method.
 
-`current.model.load` method.
-
-It is a dictionary like object that stores the loaded models in a temporary directory. 
-
-The keys of the dictionary are the artifact names and the values are the paths to the 
-
-temporary directories where the models are stored.
+It is a dictionary like object that stores the loaded models in a temporary directory. The keys of the dictionary are the artifact names and the values are the paths to the temporary directories where the models are stored.
 
 ### Attributes
 
