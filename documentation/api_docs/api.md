@@ -139,10 +139,6 @@ The `current.huggingface_hub.snapshot_download` function downloads objects from 
 
 ### Method: `current.huggingface_hub.snapshot_download`
 
-```python
-current.huggingface_hub.snapshot_download(self, **kwargs) -> dict
-```
-
 Downloads a model from huggingface hub and cache's it to the Metaflow's datastore.
 
 It passes down all the parameters to the `huggingface_hub.snapshot_download` function.
@@ -152,10 +148,6 @@ It passes down all the parameters to the `huggingface_hub.snapshot_download` fun
 - **** (*dict*): A reference to the artifact that was saved/retrieved from the Metaflow's datastore.
 
 ### Property: `current.huggingface_hub.loaded`
-
-```python
-current.huggingface_hub.loaded(checkpointer: 'HuggingfaceRegistry', logger, temp_dir_root=None) -> None
-```
 
 Manages loaded HuggingFace models/datasets and provides access to their local paths.
 
