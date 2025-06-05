@@ -23,14 +23,16 @@
     - [Returns](#returns-2)
   - [Property: `current.model.loaded`](#property-currentmodelloaded)
     - [Attributes](#attributes-2)
-    - [Examples](#examples-3)
+  - [Returns](#returns-3)
+  - [Examples](#examples-3)
+    - [Examples](#examples-4)
   - [Function: `load_model`](#function-load_model)
     - [Parameters](#parameters-3)
     - [Raises](#raises-1)
-    - [Examples](#examples-4)
+    - [Examples](#examples-5)
 - [Decorator: `@checkpoint`](#decorator-checkpoint)
   - [Parameters](#parameters-4)
-  - [Examples](#examples-5)
+  - [Examples](#examples-6)
   - [Property: `current.checkpoint.directory`](#property-currentcheckpointdirectory)
 - [Class: `Checkpoint`](#class-checkpoint)
   - [Attributes](#attributes-3)
@@ -40,8 +42,8 @@
     - [Parameters](#parameters-6)
   - [Method: `Checkpoint.list`](#method-checkpointlist)
     - [Parameters](#parameters-7)
-    - [Returns](#returns-3)
-    - [Examples](#examples-6)
+    - [Returns](#returns-4)
+    - [Examples](#examples-7)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -303,7 +305,39 @@ It is a dictionary like object that stores the loaded models in a temporary dire
 
 ### Attributes
 
-- **info**: 
+- **info**: Returns metadata information about all loaded models.
+
+This property provides access to the metadata of models that have been loaded
+via the `@model(load=...)` decorator or `current.model.load` method. The metadata
+includes information such as model type, creation time, size, storage format,
+and any custom metadata that was saved with the model.
+
+Returns
+-------
+dict
+    A dictionary where keys are artifact names and values are dictionaries
+    containing the metadata for each loaded model.
+
+Examples
+--------
+```python
+@model(load=["my_model", "my_checkpoint"])
+@step
+def analyze_models(self):
+    # Get metadata for all loaded models
+    model_info = current.model.loaded.info
+
+    # Access specific model metadata
+    my_model_metadata = model_info["my_model"]
+    print(f"Model size: {my_model_metadata['size']} bytes")
+    print(f"Created on: {my_model_metadata['created_on']}")
+    print(f"Storage format: {my_model_metadata['storage_format']}")
+
+    # Access custom metadata if available
+    if 'metadata' in my_model_metadata:
+        custom_metadata = my_model_metadata['metadata']
+        print(f"Custom metadata: {custom_metadata}")
+```
 
 ### Examples
 
