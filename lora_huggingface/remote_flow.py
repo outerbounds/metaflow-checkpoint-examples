@@ -47,7 +47,7 @@ class LlamaInstructionTuning(FlowSpec, HuggingFaceLora):
     @gpu_profile(interval=0.5)
     @model(load=["hf_model_checkpoint"])
     @checkpoint
-    @kubernetes(image=HF_IMAGE, gpu=N_GPU, cpu=14, memory=72000)
+    @kubernetes(image=HF_IMAGE, gpu=N_GPU, cpu=14, memory=72000, shared_memory=1000)
     @retry(times=3)
     @step
     def finetune(self):
