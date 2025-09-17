@@ -75,7 +75,7 @@ Decorator that helps cache, version, and store models/datasets from the Hugging 
         i.e., the base path of the cache is static and all repos are stored under it.
         When to use this mode:
             - All repos from the Hugging Face Hub need to be shared by users across all flow executions.
-    - Each caching scope comes with its own :
+    - Each caching scope comes with its own trade-offs:
         - `checkpoint`:
             - Has explicit control over when caches are populated (controlled by the same flow that has the `@huggingface_hub` decorator) but ends up hitting the Hugging Face Hub more often if there are many users/namespaces/steps.
             - Since objects are written on a `namespace/flow/step` basis, the blast radius of a bad checkpoint is limited to a particular flow in a namespace.
