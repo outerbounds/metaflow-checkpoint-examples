@@ -1,20 +1,25 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
 - [Decorator: `@huggingface_hub`](#decorator-huggingface_hub)
   - [Parameters](#parameters)
   - [Examples](#examples)
   - [Property: `current.huggingface_hub`](#property-currenthuggingface_hub)
     - [Attributes](#attributes)
+    - [Examples](#examples-1)
     - [Method: `current.huggingface_hub.snapshot_download`](#method-currenthuggingface_hubsnapshot_download)
       - [Returns](#returns)
+    - [Method: `current.huggingface_hub.load`](#method-currenthuggingface_hubload)
+      - [Parameters](#parameters-1)
+      - [Yields](#yields)
     - [Property: `current.huggingface_hub.loaded`](#property-currenthuggingface_hubloaded)
       - [Attributes](#attributes-1)
-      - [Examples](#examples-1)
+      - [Examples](#examples-2)
 - [Decorator: `@model`](#decorator-model)
-  - [Parameters](#parameters-1)
-  - [Examples](#examples-2)
+  - [Parameters](#parameters-2)
   - [Method: `current.model.save`](#method-currentmodelsave)
-    - [Parameters](#parameters-2)
+    - [Parameters](#parameters-3)
     - [Returns](#returns-1)
     - [Raises](#raises)
   - [Method: `current.model.load`](#method-currentmodelload)
@@ -23,23 +28,22 @@
     - [Attributes](#attributes-2)
     - [Examples](#examples-3)
   - [Function: `load_model`](#function-load_model)
-    - [Parameters](#parameters-3)
+    - [Parameters](#parameters-4)
     - [Raises](#raises-1)
     - [Examples](#examples-4)
 - [Decorator: `@checkpoint`](#decorator-checkpoint)
-  - [Parameters](#parameters-4)
-  - [Examples](#examples-5)
+  - [Parameters](#parameters-5)
   - [Property: `current.checkpoint.directory`](#property-currentcheckpointdirectory)
 - [Class: `Checkpoint`](#class-checkpoint)
   - [Attributes](#attributes-3)
   - [Method: `Checkpoint.save`](#method-checkpointsave)
-    - [Parameters](#parameters-5)
-  - [Method: `Checkpoint.load`](#method-checkpointload)
     - [Parameters](#parameters-6)
-  - [Method: `Checkpoint.list`](#method-checkpointlist)
+  - [Method: `Checkpoint.load`](#method-checkpointload)
     - [Parameters](#parameters-7)
+  - [Method: `Checkpoint.list`](#method-checkpointlist)
+    - [Parameters](#parameters-8)
     - [Returns](#returns-3)
-    - [Examples](#examples-6)
+    - [Examples](#examples-5)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -53,11 +57,180 @@
 
 **Module:** `metaflow`
 
-Decorator that helps cache, version and store models/datasets from huggingface hub.
+Decorator that helps cache, version, and store models/datasets from the Hugging Face Hub.
+
+> Examples
+
+
+
+**Usage: creating references to models from the Hugging Face Hub that may be loaded in downstream steps**
+
+```python
+
+    @huggingface_hub
+
+    @step
+
+    def pull_model_from_huggingface(self):
+
+        # `current.huggingface_hub.snapshot_download` downloads the model from the Hugging Face Hub
+
+        # and saves it in the backend storage based on the model's `repo_id`. If there exists a model
+
+        # with the same `repo_id` in the backend storage, it will not download the model again. The return
+
+        # value of the function is a reference to the model in the backend storage.
+
+        # This reference can be used to load the model in the subsequent steps via `@model(load=["llama_model"])`
+
+
+
+        self.model_id = "mistralai/Mistral-7B-Instruct-v0.1"
+
+        self.llama_model = current.huggingface_hub.snapshot_download(
+
+            repo_id=self.model_id,
+
+            allow_patterns=["*.safetensors", "*.json", "tokenizer.*"],
+
+        )
+
+        self.next(self.train)
+
+```
+
+
+
+**Usage: explicitly loading models at runtime from the Hugging Face Hub or from cache (from Metaflow's datastore)**
+
+```python
+
+    @huggingface_hub
+
+    @step
+
+    def run_training(self):
+
+        # Temporary directory (auto-cleaned on exit)
+
+        with current.huggingface_hub.load(
+
+            repo_id="google-bert/bert-base-uncased",
+
+            allow_patterns=["*.bin"],
+
+        ) as local_path:
+
+            # Use files under local_path
+
+            train_model(local_path)
+
+            ...
+
+
+
+```
+
+
+
+**Usage: loading models directly from the Hugging Face Hub or from cache (from Metaflow's datastore)**
+
+```python
+
+    @huggingface_hub(load=["mistralai/Mistral-7B-Instruct-v0.1"])
+
+    @step
+
+    def pull_model_from_huggingface(self):
+
+        path_to_model = current.huggingface_hub.loaded["mistralai/Mistral-7B-Instruct-v0.1"]
+
+```
+
+
+
+```python
+
+    @huggingface_hub(load=[("mistralai/Mistral-7B-Instruct-v0.1", "/my-directory"), ("myorg/mistral-lora", "/my-lora-directory")])
+
+    @step
+
+    def finetune_model(self):
+
+        path_to_model = current.huggingface_hub.loaded["mistralai/Mistral-7B-Instruct-v0.1"]
+
+        # path_to_model will be /my-directory
+
+```
+
+
+
+```python
+
+    # Takes all the arguments passed to `snapshot_download`
+
+    # except for `local_dir`
+
+    @huggingface_hub(load=[
+
+        {
+
+            "repo_id": "mistralai/Mistral-7B-Instruct-v0.1",
+
+        },
+
+        {
+
+            "repo_id": "myorg/mistral-lora",
+
+            "repo_type": "model",
+
+        },
+
+    ])
+
+    @step
+
+    def finetune_model(self):
+
+        path_to_model = current.huggingface_hub.loaded["mistralai/Mistral-7B-Instruct-v0.1"]
+
+        # path_to_model will be /my-directory
+
+```
 
 ## Parameters
 
 - **temp_dir_root** (*str, optional*): The root directory that will hold the temporary directory where objects will be downloaded.
+- **cache_scope** (*str, optional*): The scope of the cache. Can be `checkpoint` / `flow` / `global`.
+
+- `checkpoint` (default): All repos are stored like objects saved by `@checkpoint`.
+    i.e., the cached path is derived from the namespace, flow, step, and Metaflow foreach iteration.
+    Any repo downloaded under this scope will only be retrieved from the cache when the step runs under the same namespace in the same flow (at the same foreach index).
+
+- `flow`: All repos are cached under the flow, regardless of namespace.
+    i.e., the cached path is derived solely from the flow name.
+    When to use this mode:
+        - Multiple users are executing the same flow and want shared access to the repos cached by the decorator.
+        - Multiple versions of a flow are deployed, all needing access to the same repos cached by the decorator.
+
+- `global`: All repos are cached under a globally static path.
+    i.e., the base path of the cache is static and all repos are stored under it.
+    When to use this mode:
+        - All repos from the Hugging Face Hub need to be shared by users across all flow executions.
+
+Each caching scope comes with its own trade-offs:
+- `checkpoint`:
+    - Has explicit control over when caches are populated (controlled by the same flow that has the `@huggingface_hub` decorator) but ends up hitting the Hugging Face Hub more often if there are many users/namespaces/steps.
+    - Since objects are written on a `namespace/flow/step` basis, the blast radius of a bad checkpoint is limited to a particular flow in a namespace.
+- `flow`:
+    - Has less control over when caches are populated (can be written by any execution instance of a flow from any namespace) but results in more cache hits.
+    - The blast radius of a bad checkpoint is limited to all runs of a particular flow.
+    - It doesn't promote cache reuse across flows.
+- `global`:
+    - Has no control over when caches are populated (can be written by any flow execution) but has the highest cache hit rate.
+    - It promotes cache reuse across flows.
+    - The blast radius of a bad checkpoint spans every flow that could be using a particular repo.
 - **load: Union[List[str], List[Tuple[Dict, str]], List[Tuple[str, str]], List[Dict], None]**: The list of repos (models/datasets) to load.
 
 Loaded repos can be accessed via `current.huggingface_hub.loaded`. If load is set, then the following happens:
@@ -72,78 +245,121 @@ Loaded repos can be accessed via `current.huggingface_hub.loaded`. If load is se
 
 ## Examples
 
-**Usage: creating references of models from huggingface that may be loaded in downstream steps**
-```python
-    @huggingface_hub
-    @step
-    def pull_model_from_huggingface(self):
-        # `current.huggingface_hub.snapshot_download` downloads the model from the Hugging Face Hub
-        # and saves it in the backend storage based on the model's `repo_id`. If there exists a model
-        # with the same `repo_id` in the backend storage, it will not download the model again. The return
-        # value of the function is a reference to the model in the backend storage.
-        # This reference can be used to load the model in the subsequent steps via `@model(load=["llama_model"])`
+    Snapshot reference:
+    ```python
+    ref = current.huggingface_hub.snapshot_download(
+        repo_id="google-bert/bert-base-uncased",
+        allow_patterns=["*.json"]
+    )
+    ```
 
-        self.model_id = "mistralai/Mistral-7B-Instruct-v0.1"
-        self.llama_model = current.huggingface_hub.snapshot_download(
-            repo_id=self.model_id,
-            allow_patterns=["*.safetensors", "*.json", "tokenizer.*"],
-        )
-        self.next(self.train)
-```
-
-**Usage: loading models directly from huggingface hub or from cache (from metaflow's datastore)**
-```python
-    @huggingface_hub(load=["mistralai/Mistral-7B-Instruct-v0.1"])
-    @step
-    def pull_model_from_huggingface(self):
-        path_to_model = current.huggingface_hub.loaded["mistralai/Mistral-7B-Instruct-v0.1"]
-```
-
-```python
-    @huggingface_hub(load=[("mistralai/Mistral-7B-Instruct-v0.1", "/my-directory"), ("myorg/mistral-lora, "/my-lora-directory")])
-    @step
-    def finetune_model(self):
-        path_to_model = current.huggingface_hub.loaded["mistralai/Mistral-7B-Instruct-v0.1"]
-        # path_to_model will be /my-directory
-```
-
-```python
-    # Takes all the arguments passed to `snapshot_download`
-    # except for `local_dir`
-    @huggingface_hub(load=[
-        {
-            "repo_id": "mistralai/Mistral-7B-Instruct-v0.1",
-        },
-        {
-            "repo_id": "myorg/mistral-lora",
-            "repo_type": "model",
-        },
-    ])
-    @step
-    def finetune_model(self):
-        path_to_model = current.huggingface_hub.loaded["mistralai/Mistral-7B-Instruct-v0.1"]
-        # path_to_model will be /my-directory
-```
+    Explicit Model Loading with Context manager:
+    ```python
+    with current.huggingface_hub.load(
+        repo_id="google-bert/bert-base-uncased",
+        allow_patterns=["*.json"]
+    ) as local_path:
+        my_model = torch.load(os.path.join(local_path, "model.bin"))
+    ```
 
 ## Property: `current.huggingface_hub`
 
-This object provides syntactic sugar over [huggingface_hub](https://github.com/huggingface/huggingface_hub)'s [snapshot_download](https://huggingface.co/docs/huggingface_hub/main/en/package_reference/file_download#huggingface_hub.snapshot_download) function.
+This object provides a thin, Metaflow-friendly layer over
 
-The `current.huggingface_hub.snapshot_download` function downloads objects from huggingface hub and saves them to the Metaflow's datastore under the `<repo_type>/<repo_id>` name. The `repo_type` is by default `model` and can be overriden by passing the `repo_type` parameter to the `snapshot_download` function.
+[huggingface_hub]'s [snapshot_download](https://huggingface.co/docs/huggingface_hub/main/en/package_reference/file_download#huggingface_hub.snapshot_download):
+
+- Snapshot references (persist-and-reuse):
+
+    Use `current.huggingface_hub.snapshot_download(repo_id=..., ...)` to
+
+    ensure a repo is available in the Metaflow datastore. If absent, it is
+
+    downloaded once and saved; the call returns a reference dict you can
+
+    store and load later (for example via `@model`).
+
+
+
+- On-demand local access (context manager):
+
+    Use `current.huggingface_hub.load(repo_id=..., [path=...], ...)` as a
+
+    context manager to obtain a local filesystem path for immediate use.
+
+    If the repo exists in the datastore, it is loaded from there;
+
+    otherwise it is fetched from the Hugging Face Hub and then cached in
+
+    the datastore. When `path` is omitted, a temporary directory is
+
+    created and cleaned up automatically when the context exits. When
+
+    `path` is provided, files are placed there and are not cleaned up by
+
+    the context manager.
+
+
+
+Repos are cached in the datastore using the huggingface_hub.snapshot_download's arguments. The cache
+
+key may include: `repo_id`, `repo_type`, `revision`, `ignore_patterns`,
+
+and `allow_patterns` (see `cache_scope` for how keys are scoped).
 
 ### Attributes
 
 - **loaded**: This property provides a dictionary-like interface to access the local paths of the huggingface repos specified in the `load` argument of the `@huggingface_hub` decorator.
 
+### Examples
+
+```python
+# Snapshot reference:
+ref = current.huggingface_hub.snapshot_download(
+    repo_id="google-bert/bert-base-uncased",
+    allow_patterns=["*.json"]
+)
+# Explicit Model Loading with Context manager:
+
+with current.huggingface_hub.load(
+    repo_id="google-bert/bert-base-uncased",
+    allow_patterns=["*.json"]
+) as local_path:
+    my_model = torch.load(os.path.join(local_path, "model.bin"))
+```
+
 ### Method: `current.huggingface_hub.snapshot_download`
 
-Downloads a model from huggingface hub and cache's it to the Metaflow's datastore.
+Downloads a model from the Hugging Face Hub and caches it in the Metaflow datastore.
 
-It passes down all the parameters to the `huggingface_hub.snapshot_download` function.
+It passes all parameters to the `huggingface_hub.snapshot_download` function.
 
 #### Returns
 
-- **** (*dict*): A reference to the artifact that was saved/retrieved from the Metaflow's datastore.
+- **** (*dict*): A reference to the artifact saved to or retrieved from the Metaflow datastore.
+
+### Method: `current.huggingface_hub.load`
+
+Context manager to load a Hugging Face repo (model/dataset) to a local path.
+
+- If `path` is provided, the repo is loaded there and the same path is yielded.
+
+- If `path` is not provided, a temporary directory is created, the repo is
+
+  loaded there, the path is yielded, and the directory is cleaned up when
+
+  the context exits.
+
+#### Parameters
+
+- **repo_id** (*str, optional*): The Hugging Face repo ID. If omitted, must be provided via kwargs["repo_id"].
+- **path** (*str, optional*): Target directory to place files. If None, a temp directory is created.
+- **repo_type** (*str, optional*): Repo type (e.g., "model", "dataset"). Defaults to "model".
+- ****kwargs** (*Any*): Additional args forwarded to snapshot_download (e.g. force_download, revision,
+allow_patterns, ignore_patterns, etc.).
+
+#### Yields
+
+- **** (*str*): Local filesystem path where the repo is available.
 
 ### Property: `current.huggingface_hub.loaded`
 
@@ -199,6 +415,86 @@ def another_step(self):
 
 Enables loading / saving of models within a step.
 
+> Examples
+
+- Saving Models
+
+```python
+
+@model
+
+@step
+
+def train(self):
+
+    # current.model.save returns a dictionary reference to the model saved
+
+    self.my_model = current.model.save(
+
+        path_to_my_model,
+
+        label="my_model",
+
+        metadata={
+
+            "epochs": 10,
+
+            "batch-size": 32,
+
+            "learning-rate": 0.001,
+
+        }
+
+    )
+
+    self.next(self.test)
+
+
+
+@model(load="my_model")
+
+@step
+
+def test(self):
+
+    # `current.model.loaded` returns a dictionary of the loaded models
+
+    # where the key is the name of the artifact and the value is the path to the model
+
+    print(os.listdir(current.model.loaded["my_model"]))
+
+    self.next(self.end)
+
+```
+
+
+
+- Loading models
+
+```python
+
+@step
+
+def train(self):
+
+    # current.model.load returns the path to the model loaded
+
+    checkpoint_path = current.model.load(
+
+        self.checkpoint_key,
+
+    )
+
+    model_path = current.model.load(
+
+        self.model,
+
+    )
+
+    self.next(self.test)
+
+```
+
 ## Parameters
 
 - **load** (*Union[List[str],str,List[Tuple[str,Union[str,None]]]], default: None*): Artifact name/s referencing the models/checkpoints to load. Artifact names refer to the names of the instance variables set to `self`.
@@ -207,48 +503,6 @@ If a list of tuples is provided, the first element is the artifact name and the 
 the local filesystem. If the second element is None, the artifact will be unpacked in the current working directory.
 If a string is provided, then the artifact corresponding to that name will be loaded in the current working directory.
 - **temp_dir_root** (*str, default: None*): The root directory under which `current.model.loaded` will store loaded models
-
-## Examples
-
-- Saving Models
-```python
-@model
-@step
-def train(self):
-    # current.model.save returns a dictionary reference to the model saved
-    self.my_model = current.model.save(
-        path_to_my_model,
-        label="my_model",
-        metadata={
-            "epochs": 10,
-            "batch-size": 32,
-            "learning-rate": 0.001,
-        }
-    )
-    self.next(self.test)
-
-@model(load="my_model")
-@step
-def test(self):
-    # `current.model.loaded` returns a dictionary of the loaded models
-    # where the key is the name of the artifact and the value is the path to the model
-    print(os.listdir(current.model.loaded["my_model"]))
-    self.next(self.end)
-```
-
-- Loading models
-```python
-@step
-def train(self):
-    # current.model.load returns the path to the model loaded
-    checkpoint_path = current.model.load(
-        self.checkpoint_key,
-    )
-    model_path = current.model.load(
-        self.model,
-    )
-    self.next(self.test)
-```
 
 ## Method: `current.model.save`
 
@@ -414,6 +668,96 @@ def use_model(self):
 
 Enables checkpointing for a step.
 
+> Examples
+
+
+
+- Saving Checkpoints
+
+
+
+```python
+
+@checkpoint
+
+@step
+
+def train(self):
+
+    model = create_model(self.parameters, checkpoint_path = None)
+
+    for i in range(self.epochs):
+
+        # some training logic
+
+        loss = model.train(self.dataset)
+
+        if i % 10 == 0:
+
+            model.save(
+
+                current.checkpoint.directory,
+
+            )
+
+            # saves the contents of the `current.checkpoint.directory` as a checkpoint
+
+            # and returns a reference dictionary to the checkpoint saved in the datastore
+
+            self.latest_checkpoint = current.checkpoint.save(
+
+                name="epoch_checkpoint",
+
+                metadata={
+
+                    "epoch": i,
+
+                    "loss": loss,
+
+                }
+
+            )
+
+```
+
+
+
+- Using Loaded Checkpoints
+
+
+
+```python
+
+@retry(times=3)
+
+@checkpoint
+
+@step
+
+def train(self):
+
+    # Assume that the task has restarted and the previous attempt of the task
+
+    # saved a checkpoint
+
+    checkpoint_path = None
+
+    if current.checkpoint.is_loaded: # Check if a checkpoint is loaded
+
+        print("Loaded checkpoint from the previous attempt")
+
+        checkpoint_path = current.checkpoint.directory
+
+
+
+    model = create_model(self.parameters, checkpoint_path = checkpoint_path)
+
+    for i in range(self.epochs):
+
+        ...
+
+```
+
 ## Parameters
 
 - **load_policy** (*str, default: "fresh"*): The policy for loading the checkpoint. The following policies are supported:
@@ -426,52 +770,6 @@ Enables checkpointing for a step.
     With this mode, no checkpoint will be loaded at the start of a task but any checkpoints
     created within the task will be loaded when the task is retries execution on failure.
 - **temp_dir_root** (*str, default: None*): The root directory under which `current.checkpoint.directory` will be created.
-
-## Examples
-
-- Saving Checkpoints
-
-```python
-@checkpoint
-@step
-def train(self):
-    model = create_model(self.parameters, checkpoint_path = None)
-    for i in range(self.epochs):
-        # some training logic
-        loss = model.train(self.dataset)
-        if i % 10 == 0:
-            model.save(
-                current.checkpoint.directory,
-            )
-            # saves the contents of the `current.checkpoint.directory` as a checkpoint
-            # and returns a reference dictionary to the checkpoint saved in the datastore
-            self.latest_checkpoint = current.checkpoint.save(
-                name="epoch_checkpoint",
-                metadata={
-                    "epoch": i,
-                    "loss": loss,
-                }
-            )
-```
-
-- Using Loaded Checkpoints
-
-```python
-@retry(times=3)
-@checkpoint
-@step
-def train(self):
-    # Assume that the task has restarted and the previous attempt of the task
-    # saved a checkpoint
-    checkpoint_path = None
-    if current.checkpoint.is_loaded: # Check if a checkpoint is loaded
-        print("Loaded checkpoint from the previous attempt")
-        checkpoint_path = current.checkpoint.directory
-
-    model = create_model(self.parameters, checkpoint_path = checkpoint_path)
-    for i in range(self.epochs):
-        ...
-```
 
 ## Property: `current.checkpoint.directory`
 
